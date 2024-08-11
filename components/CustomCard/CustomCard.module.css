@@ -1,0 +1,5 @@
+.cardText {
+    font-weight: 700;
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+    font-size: rem(12.5px);
+}
