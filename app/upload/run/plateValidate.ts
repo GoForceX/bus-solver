@@ -1,4 +1,4 @@
-const plateProvince = [
+export const plateProvince = [
   '粤',
   '川',
   '津',

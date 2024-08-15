@@ -1,19 +1,24 @@
 'use client';
 
-import { useForm } from '@mantine/form';
+import { Button, Stack } from '@mantine/core';
+import { useRouter } from 'next/navigation';
+
 import { CustomCard } from '@/components/CustomCard/CustomCard';
 
 export default function Page() {
-  const form = useForm({
-    mode: 'uncontrolled',
-    initialValues: {},
-
-    validate: {},
-  });
+  const router = useRouter();
 
   return (
-    <CustomCard title="提交班线信息">
-      <form onSubmit={form.onSubmit((values) => console.log(values))}></form>
-    </CustomCard>
+    <>
+      <CustomCard title="选择提交内容">
+        <Stack>
+          <Button color="green" onClick={() => router.push('/upload/run')}>
+            提交新班线
+          </Button>
+          <Button color="yellow">提交新车站</Button>
+          <Button color="red">提交新营运公司</Button>
+        </Stack>
+      </CustomCard>
+    </>
   );
 }

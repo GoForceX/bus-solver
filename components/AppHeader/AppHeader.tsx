@@ -25,7 +25,7 @@ export function AppHeader() {
       key={link.label}
       href={link.link}
       className={classes.link}
-      data-active={active === link.link || undefined}
+      data-active={active.startsWith(link.link) || undefined}
       onClick={(event) => {
         event.preventDefault();
         router.push(link.link);
