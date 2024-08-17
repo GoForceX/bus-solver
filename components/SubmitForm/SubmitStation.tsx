@@ -4,9 +4,11 @@ import { useForm } from '@mantine/form';
 import { CustomCard } from '../CustomCard/CustomCard';
 
 export function SubmitStation({
+  stationKey,
   suffix,
   onSubmit,
 }: {
+  stationKey?: string;
   suffix?: string;
   onSubmit: (values: any) => void;
 }) {

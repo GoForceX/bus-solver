@@ -10,17 +10,19 @@ export function CustomCard({
   titleAfter,
   children,
   collapsible,
+  withBorder,
 }: {
   titleBefore?: React.ReactNode;
   title: string;
   titleAfter?: React.ReactNode;
   children: React.ReactNode;
   collapsible?: boolean;
+  withBorder?: boolean;
 }) {
   const [opened, { toggle }] = useDisclosure(true);
 
   return (
-    <Card shadow="sm" p="md" radius="sm">
+    <Card shadow="sm" p="md" radius="sm" withBorder={withBorder}>
       <Card.Section inheritPadding>
         <Group mt="md" mb="xs" gap={rem(4)} align="center">
           {collapsible ? (

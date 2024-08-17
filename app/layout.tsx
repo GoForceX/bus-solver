@@ -7,6 +7,7 @@ import {
   createTheme,
   Container,
 } from '@mantine/core';
+
 import { AppHeader } from '@/components/AppHeader/AppHeader';
 
 export const metadata = {

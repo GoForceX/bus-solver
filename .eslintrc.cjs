@@ -14,5 +14,6 @@ module.exports = {
     'react/react-in-jsx-scope': 'off',
     'import/extensions': 'off',
     quotes: ['error', 'single'],
+    'no-spaced-func': 'off',
   },
 };
