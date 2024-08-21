@@ -11,8 +11,8 @@ import {
 import { AppHeader } from '@/components/AppHeader/AppHeader';
 
 export const metadata = {
-  title: 'Mantine Next.js template',
-  description: 'I am using Mantine with Next.js!',
+  title: '望青客运信息站',
+  description: '',
 };
 
 const myColor: MantineColorsTuple = [
