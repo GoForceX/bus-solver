@@ -1,26 +1,23 @@
 import { Card, Collapse, Group, rem, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { forwardRef } from 'react';
 
 import classes from './CustomCard.module.css';
 
-export function CustomCard({
-  titleBefore,
-  title,
-  titleAfter,
-  titleEnd,
-  children,
-  collapsible,
-  withBorder,
-}: {
-  titleBefore?: React.ReactNode;
-  title: string;
-  titleAfter?: React.ReactNode;
-  titleEnd?: React.ReactNode;
-  children: React.ReactNode;
-  collapsible?: boolean;
-  withBorder?: boolean;
-}) {
+export const CustomCard = forwardRef<
+  HTMLDivElement,
+  {
+    titleBefore?: React.ReactNode;
+    title: string;
+    titleAfter?: React.ReactNode;
+    titleEnd?: React.ReactNode;
+    children: React.ReactNode;
+    collapsible?: boolean;
+    withBorder?: boolean;
+    style?: any;
+  }
+>(({ titleBefore, title, titleAfter, titleEnd, children, collapsible, withBorder, style }, ref) => {
   const [opened, { toggle }] = useDisclosure(true);
 
   return (
@@ -31,7 +28,9 @@ export function CustomCard({
       withBorder={withBorder}
       style={{
         height: 'fit-content',
+        ...style,
       }}
+      ref={ref}
     >
       <Card.Section inheritPadding>
         <Group justify="space-between">
@@ -53,4 +52,4 @@ export function CustomCard({
       {collapsible ? <Collapse in={opened}>{children}</Collapse> : children}
     </Card>
   );
-}
+});

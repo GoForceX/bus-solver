@@ -1,18 +1,16 @@
 import { rem, Stack, TextInput } from '@mantine/core';
 import { TimeInput } from '@mantine/dates';
 import { IconClock, IconX } from '@tabler/icons-react';
+import { forwardRef } from 'react';
 
 import { CustomCard } from '../CustomCard/CustomCard';
 
-export function IntermediateStation({
-  stationKey,
-  formContext,
-  onDelete,
-}: {
+export const IntermediateStation = forwardRef<HTMLDivElement, {
   stationKey?: number;
   formContext: any;
+  style?: any;
   onDelete: (stationKey: number) => void;
-}) {
+}>(({ stationKey, formContext, style, onDelete }, ref) => {
   const form = formContext();
   return (
     <>
@@ -31,6 +29,8 @@ export function IntermediateStation({
         }
         collapsible
         withBorder
+        ref={ref}
+        style={style}
       >
         <Stack gap="sm" key={`__station.intermediate.stack_${stationKey}`}>
           <TextInput
@@ -59,4 +59,4 @@ export function IntermediateStation({
       </CustomCard>
     </>
   );
-}
+});

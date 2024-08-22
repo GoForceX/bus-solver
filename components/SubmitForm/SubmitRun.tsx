@@ -10,11 +10,13 @@ import {
   Button,
   Input,
   Modal,
+  Stack,
 } from '@mantine/core';
 import { createFormContext } from '@mantine/form';
 import { TimeInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
-import { IconClock } from '@tabler/icons-react';
+import { IconClock, IconGripVertical } from '@tabler/icons-react';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 
 import { plateProvince, plateValidate } from '@/app/upload/run/plateValidate';
@@ -69,7 +71,10 @@ const [FormProvider, useFormContext, useForm] = createFormContext<{
 
 export const SubmitRun = forwardRef<
   HTMLFormElement,
-  { onSubmit: (values: any) => void; onAddStation: (keys: string[]) => void }
+  {
+    onSubmit: (values: any) => void;
+    onAddStation: (keys: string[]) => void;
+  }
 >(({ onSubmit, onAddStation }, ref) => {
   const [fromStationOpened, { open: setFromStationOpened, close: setFromStationClosed }] =
     useDisclosure(false);
@@ -188,9 +193,16 @@ export const SubmitRun = forwardRef<
             }
             return undefined;
           },
-          time: (value) => {
+          time: (value, values, path) => {
+            const currentIndex = parseInt(path.split('.')[2], 10);
             if (value.length === 0) {
               return '请选择时间';
+            }
+            if (values.station.intermediate[currentIndex - 1]?.time) {
+              const previousTime = values.station.intermediate[currentIndex - 1].time;
+              if (value <= previousTime) {
+                return '时间应晚于前一站点';
+              }
             }
             return undefined;
           },
@@ -311,7 +323,6 @@ export const SubmitRun = forwardRef<
                   <Radio value="other" label="其他" />
                 </Group>
               </Radio.Group>
-
               <TextInput
                 label="车牌号"
                 placeholder="A12…"
@@ -354,7 +365,6 @@ export const SubmitRun = forwardRef<
                 }
                 leftSectionWidth={form.values.plate.type === 'other' ? undefined : rem(40)}
               />
-
               <SimpleGrid
                 cols={{ base: 1, sm: 2 }}
                 spacing={{ base: 10, sm: 'lg' }}
@@ -519,7 +529,6 @@ export const SubmitRun = forwardRef<
                   </Group>
                 </Radio.Group>
               </SimpleGrid>
-
               {form.values.schedule.frequency === 'other' ? (
                 <TextInput
                   withAsterisk
@@ -529,13 +538,11 @@ export const SubmitRun = forwardRef<
                   {...form.getInputProps('schedule.explain')}
                 />
               ) : null}
-
               <Checkbox
                 label="流水班"
                 key={form.key('shuttle.enabled')}
                 {...form.getInputProps('shuttle.enabled')}
               />
-
               {form.values.shuttle.enabled ? (
                 <SimpleGrid
                   cols={{ base: 1, sm: 2 }}
@@ -562,7 +569,6 @@ export const SubmitRun = forwardRef<
                   />
                 </SimpleGrid>
               ) : null}
-
               <Button
                 variant="outline"
                 onClick={() => {
@@ -578,25 +584,73 @@ export const SubmitRun = forwardRef<
               >
                 添加中途站点
               </Button>
+              <DragDropContext
+                onDragEnd={({ destination, source }) => {
+                  form.setFieldValue(
+                    'station.intermediate',
+                    (() => {
+                      if (!destination) {
+                        return form.values.station.intermediate;
+                      }
 
-              <SimpleGrid
-                cols={{ base: 1, sm: 2 }}
-                spacing={{ base: 10, sm: 'lg' }}
-                verticalSpacing="md"
+                      const result = Array.from(form.values.station.intermediate);
+                      const [removed] = result.splice(source.index, 1);
+                      result.splice(destination.index, 0, removed);
+                      return result;
+                    })()
+                  );
+                  form.setTouched({ 'station.intermediate': true });
+                  // verify all fields
+                  form.values.station.intermediate.forEach((_, index) => {
+                    form.validateField(`station.intermediate.${index}.name`);
+                    form.validateField(`station.intermediate.${index}.time`);
+                    form.validateField(`station.intermediate.${index}.type`);
+                  });
+                }}
               >
-                {form.values.station.intermediate.map((_, index) => (
-                  <IntermediateStation
-                    stationKey={index}
-                    formContext={useFormContext}
-                    onDelete={() => {
-                      form.setFieldValue(
-                        'station.intermediate',
-                        form.values.station.intermediate.filter((_v, i) => i !== index)
-                      );
-                    }}
-                  />
-                ))}
-              </SimpleGrid>
+                <Droppable droppableId="dnd-list" direction="vertical">
+                  {(provided) => (
+                    <Stack {...provided.droppableProps} ref={provided.innerRef}>
+                      {form.values.station.intermediate.map((_, index) => (
+                        <Draggable
+                          key={`__intermediate.${index}`}
+                          index={index}
+                          draggableId={`__intermediate.${index}`}
+                        >
+                          {(itemProvided) => (
+                            <Group
+                              justify="space-around"
+                              ref={itemProvided.innerRef}
+                              {...itemProvided.draggableProps}
+                            >
+                              <div {...itemProvided.dragHandleProps}>
+                                <IconGripVertical
+                                  style={{ width: rem(18), height: rem(18) }}
+                                  stroke={1.5}
+                                />
+                              </div>
+                              <IntermediateStation
+                                style={{
+                                  flexGrow: 1,
+                                }}
+                                stationKey={index}
+                                formContext={useFormContext}
+                                onDelete={() => {
+                                  form.setFieldValue(
+                                    'station.intermediate',
+                                    form.values.station.intermediate.filter((_v, i) => i !== index)
+                                  );
+                                }}
+                              />
+                            </Group>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </Stack>
+                  )}
+                </Droppable>
+              </DragDropContext>
             </Flex>
           </form>
         </CustomCard>
