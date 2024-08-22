@@ -1,5 +1,5 @@
 export type IntermediateStationType = {
-  station: string;
+  name: string;
   time: string;
   type: string;
 };

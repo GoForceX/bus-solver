@@ -1,13 +1,7 @@
 'use client';
 
-import React from 'react';
-import {
-  Button,
-  Grid,
-  ScrollArea,
-  Stack,
-  Text,
-} from '@mantine/core';
+import React, { useState } from 'react';
+import { Button, Grid, ScrollArea, Stack, Text } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 
 import { CustomCard } from '@/components/CustomCard/CustomCard';
@@ -17,6 +11,21 @@ import { handleSubmit } from './handleSubmit';
 
 export default function Page() {
   const formRef = React.useRef<HTMLFormElement>(null);
+
+  const [stationNodes, setStationNodes] = useState(new Map<string, React.ReactNode>());
+
+  function parseStationKeyToTitle(key: string): string {
+    if (key === 'from') {
+      return '始发站';
+    }
+    if (key === 'to') {
+      return '终点站';
+    }
+    if (key.startsWith('intermediate')) {
+      return `中途站 - ${key.split('.')[1]}`;
+    }
+    return '未知';
+  }
 
   return (
     <>
@@ -29,14 +38,45 @@ export default function Page() {
                 console.log(value);
                 handleSubmit(value);
               }}
-            />
+              onAddStation={(stationKeys) => {
+                console.log(stationKeys);
 
-            <SubmitStation
-              suffix="发站"
-              onSubmit={(value) => {
-                console.log(value);
+                stationNodes.forEach((node, key) => {
+                  if (!stationKeys.includes(key)) {
+                    setStationNodes((prev) => {
+                      const newMap = new Map(prev);
+                      newMap.delete(key);
+                      return newMap;
+                    });
+                  }
+                });
+
+                const newMap = new Map();
+
+                stationKeys.forEach((stationKey) => {
+                  if (stationNodes.has(stationKey)) {
+                    newMap.set(stationKey, stationNodes.get(stationKey));
+                  } else {
+                    newMap.set(
+                      stationKey,
+                      <SubmitStation
+                        key={`__station.${stationKey}`}
+                        stationKey={stationKey}
+                        suffix={parseStationKeyToTitle(stationKey)}
+                        onSubmit={(values) => {
+                          console.log(values);
+                        }}
+                      />
+                    );
+                  }
+                });
+
+                // Update the state with the new Map
+                setStationNodes(newMap);
               }}
             />
+
+            {Array.from(stationNodes.values())}
           </Stack>
         </Grid.Col>
 

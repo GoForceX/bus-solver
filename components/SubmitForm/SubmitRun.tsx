@@ -11,11 +11,11 @@ import {
   Input,
   Modal,
 } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import { createFormContext } from '@mantine/form';
 import { TimeInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import { IconClock } from '@tabler/icons-react';
-import { forwardRef } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 
 import { plateProvince, plateValidate } from '@/app/upload/run/plateValidate';
 import { CustomCard } from '../CustomCard/CustomCard';
@@ -23,170 +23,271 @@ import { IntermediateStationType } from '@/app/upload/run/types';
 import { IntermediateStation } from './IntermediateStation';
 import { SearchPOI } from '../Amap/SearchPOI';
 
-export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) => void }>(
-  ({ onSubmit }, ref) => {
-    const [fromStationOpened, { open: setFromStationOpened, close: setFromStationClosed }] =
-      useDisclosure(false);
-    const [toStationOpened, { open: setToStationOpened, close: setToStationClosed }] =
-      useDisclosure(false);
+const [FormProvider, useFormContext, useForm] = createFormContext<{
+  plate: {
+    number: {
+      province: string;
+      detail: string;
+    };
+    type: string;
+    otherDesc: string;
+  };
+  station: {
+    from: {
+      outside: boolean;
+      id: string;
+      address: {
+        name: string;
+        id: string;
+      };
+    };
+    intermediate: IntermediateStationType[];
+    to: {
+      outside: boolean;
+      id: string;
+      address: {
+        name: string;
+        id: string;
+      };
+    };
+  };
+  company: {
+    id: string;
+    desc: string;
+  };
+  schedule: {
+    departTime: string;
+    frequency: string;
+    explain: string;
+  };
+  shuttle: {
+    enabled: boolean;
+    startTime: string;
+    endTime: string;
+  };
+}>();
 
-    const form = useForm({
-      validateInputOnChange: true,
-      initialValues: {
-        plate: {
-          number: {
-            province: '',
-            detail: '',
-          },
-          type: '',
-          otherDesc: '',
+export const SubmitRun = forwardRef<
+  HTMLFormElement,
+  { onSubmit: (values: any) => void; onAddStation: (keys: string[]) => void }
+>(({ onSubmit, onAddStation }, ref) => {
+  const [fromStationOpened, { open: setFromStationOpened, close: setFromStationClosed }] =
+    useDisclosure(false);
+  const [toStationOpened, { open: setToStationOpened, close: setToStationClosed }] =
+    useDisclosure(false);
+  const [addStationList, setAddStationList] = useState<string[]>([]);
+
+  const form = useForm({
+    validateInputOnChange: true,
+    initialValues: {
+      plate: {
+        number: {
+          province: '',
+          detail: '',
         },
-        station: {
-          from: {
-            outside: false,
-            id: '',
-            address: '',
-          },
-          intermediate: [] as IntermediateStationType[],
-          to: {
-            outside: false,
-            id: '',
-            address: '',
-          },
-        },
-        company: {
+        type: '',
+        otherDesc: '',
+      },
+      station: {
+        from: {
+          outside: false,
           id: '',
-          desc: '',
+          address: {
+            name: '',
+            id: '',
+          },
         },
-        schedule: {
-          departTime: '',
-          frequency: '',
-          explain: '',
-        },
-        shuttle: {
-          enabled: false,
-          startTime: '',
-          endTime: '',
+        intermediate: [] as IntermediateStationType[],
+        to: {
+          outside: false,
+          id: '',
+          address: {
+            name: '',
+            id: '',
+          },
         },
       },
+      company: {
+        id: '',
+        desc: '',
+      },
+      schedule: {
+        departTime: '',
+        frequency: '',
+        explain: '',
+      },
+      shuttle: {
+        enabled: false,
+        startTime: '',
+        endTime: '',
+      },
+    },
 
-      validate: {
-        plate: {
-          type: (value) => {
+    validate: {
+      plate: {
+        type: (value) => {
+          if (!value) {
+            return '请选择车牌类型';
+          }
+          return undefined;
+        },
+        number: {
+          detail: (value, values) => {
             if (!value) {
-              return '请选择车牌类型';
+              return '车牌号不能为空';
             }
-            return undefined;
-          },
-          number: {
-            detail: (value, values) => {
-              if (!value) {
-                return '车牌号不能为空';
-              }
-              if (values.plate.type === 'other') {
-                return undefined;
-              }
-              if (!values.plate.number.province) {
-                return '请选择车牌省份';
-              }
-              if (value.length !== 6 && value.length !== 7) {
-                return '车牌号长度必须为 7-8 位';
-              }
-              if (!plateValidate(`${values.plate.number.province}${value.toUpperCase()}`)) {
-                return '车牌号格式不正确';
-              }
+            if (values.plate.type === 'other') {
               return undefined;
-            },
-          },
-        },
-        station: {
-          from: {
-            id: (value, values) => {
-              if (!values.station.from.outside && value.length === 0) {
-                return '请选择发站';
-              }
-              return undefined;
-            },
-            address: (value, values) => {
-              if (values.station.from.outside && value.length === 0) {
-                return '请填写发站地址';
-              }
-              return undefined;
-            },
-          },
-          to: {
-            id: (value, values) => {
-              if (!values.station.to.outside && value.length === 0) {
-                return '请选择到站';
-              }
-              return undefined;
-            },
-            address: (value, values) => {
-              if (values.station.to.outside && value.length === 0) {
-                return '请填写到站地址';
-              }
-              return undefined;
-            },
-          },
-        },
-        company: {
-          id: (value) => {
-            if (value.length === 0) {
-              return '请选择运营公司';
             }
-            return undefined;
-          },
-        },
-        schedule: {
-          departTime: (value) => {
-            if (value.length === 0) {
-              return '请选择发车时间';
+            if (!values.plate.number.province) {
+              return '请选择车牌省份';
             }
-            return undefined;
-          },
-          frequency: (value) => {
-            if (value.length === 0) {
-              return '请选择发车频次';
+            if (value.length !== 6 && value.length !== 7) {
+              return '车牌号长度必须为 7-8 位';
             }
-            return undefined;
-          },
-        },
-        shuttle: {
-          startTime: (value, values) => {
-            if (values.shuttle.enabled && value.length === 0) {
-              return '请选择开始时间';
-            }
-            return undefined;
-          },
-          endTime: (value, values) => {
-            if (values.shuttle.enabled && value.length === 0) {
-              return '请选择结束时间';
+            if (!plateValidate(`${values.plate.number.province}${value.toUpperCase()}`)) {
+              return '车牌号格式不正确';
             }
             return undefined;
           },
         },
       },
+      station: {
+        from: {
+          id: (value, values) => {
+            if (!values.station.from.outside && value.length === 0) {
+              return '请选择发站';
+            }
+            return undefined;
+          },
+          address: (value, values) => {
+            if (values.station.from.outside && value.id.length === 0) {
+              return '请填写发站地址';
+            }
+            return undefined;
+          },
+        },
+        to: {
+          id: (value, values) => {
+            if (!values.station.to.outside && value.length === 0) {
+              return '请选择到站';
+            }
+            return undefined;
+          },
+          address: (value, values) => {
+            if (values.station.to.outside && value.id.length === 0) {
+              return '请填写到站地址';
+            }
+            return undefined;
+          },
+        },
+        intermediate: {
+          name: (value) => {
+            if (value.length === 0) {
+              return '请输入车站名称';
+            }
+            return undefined;
+          },
+          time: (value) => {
+            if (value.length === 0) {
+              return '请选择时间';
+            }
+            return undefined;
+          },
+          type: (value) => {
+            if (value.length === 0) {
+              return '请输入类型';
+            }
+            return undefined;
+          },
+        },
+      },
+      company: {
+        id: (value) => {
+          if (value.length === 0) {
+            return '请选择运营公司';
+          }
+          return undefined;
+        },
+      },
+      schedule: {
+        departTime: (value) => {
+          if (value.length === 0) {
+            return '请选择发车时间';
+          }
+          return undefined;
+        },
+        frequency: (value) => {
+          if (value.length === 0) {
+            return '请选择发车频次';
+          }
+          return undefined;
+        },
+      },
+      shuttle: {
+        startTime: (value, values) => {
+          if (values.shuttle.enabled && value.length === 0) {
+            return '请选择开始时间';
+          }
+          return undefined;
+        },
+        endTime: (value, values) => {
+          if (values.shuttle.enabled && value.length === 0) {
+            return '请选择结束时间';
+          }
+          return undefined;
+        },
+      },
+    },
+  });
 
-      transformValues: (values): object => ({
-        plateNumber: `${values.plate.type === 'other' ? '' : values.plate.number.province}${values.plate.number.detail.toUpperCase()}`,
-        ...values,
-      }),
-    });
+  const mockStationList = [
+    { value: 'S13100001', label: '（河北省廊坊市）廊坊客运总站' },
+    { value: 'S11000001', label: '（北京市）六里桥客运主枢纽' },
+    { value: 'ADD', label: '+ 添加新站' },
+  ];
 
-    const mockStationList = [
-      { value: 'S13100001', label: '（河北省廊坊市）廊坊客运总站' },
-      { value: 'S11000001', label: '（北京市）六里桥客运主枢纽' },
-      { value: 'ADD', label: '+ 添加新站' },
-    ];
+  const mockCompanyList = [
+    { value: 'C13100001', label: '廊坊通利' },
+    { value: 'C13100002', label: '廊坊交运' },
+    { value: 'ADD', label: '+ 添加新公司' },
+  ];
 
-    const mockCompanyList = [
-      { value: 'C13100001', label: '廊坊通利' },
-      { value: 'C13100002', label: '廊坊交运' },
-      { value: 'ADD', label: '+ 添加新公司' },
-    ];
+  const addStationListRef = useRef(addStationList);
 
-    return (
-      <>
+  useEffect(() => {
+    addStationListRef.current = addStationList;
+  }, [addStationList]);
+
+  const handleStationChange = (key: string, previousValue: string, value: string) => {
+    if (value === 'ADD') {
+      const newList = [...addStationListRef.current, key];
+      newList.sort();
+      setAddStationList(newList);
+      onAddStation(newList);
+    }
+
+    if (previousValue === 'ADD') {
+      const newList = addStationListRef.current.filter((v) => v !== key);
+      newList.sort();
+      setAddStationList(newList);
+      onAddStation(newList);
+    }
+  };
+
+  form.watch('station.from.id', ({ previousValue, value, touched, dirty }) => {
+    console.log({ previousValue, value, touched, dirty });
+    handleStationChange('from', previousValue, value);
+  });
+
+  form.watch('station.to.id', ({ previousValue, value, touched, dirty }) => {
+    console.log({ previousValue, value, touched, dirty });
+    handleStationChange('to', previousValue, value);
+  });
+
+  return (
+    <>
+      <FormProvider form={form}>
         <CustomCard title="填写班线信息" collapsible>
           <form ref={ref} id="submitRun" onSubmit={form.onSubmit((values) => onSubmit(values))}>
             <Flex align="stretch" direction="column" justify="center" gap="md">
@@ -231,6 +332,8 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                       placeholder="—"
                       data={plateProvince}
                       searchable
+                      allowDeselect={false}
+                      checkIconPosition="right"
                       variant="unstyled"
                       key={form.key('plate.number.province')}
                       {...form.getInputProps('plate.number.province')}
@@ -276,8 +379,8 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                         withAsterisk
                         placeholder="请点击右侧按钮选择位置"
                         disabled
-                        key={form.key('station.from.address')}
-                        {...form.getInputProps('station.from.address')}
+                        key={form.key('station.from.address.name')}
+                        {...form.getInputProps('station.from.address.name')}
                       />
                       <Modal
                         size="xl"
@@ -285,7 +388,13 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                         onClose={setFromStationClosed}
                         title="发站位置 - 地图选点"
                       >
-                        <SearchPOI></SearchPOI>
+                        <SearchPOI
+                          onClose={(selected) => {
+                            form.setFieldValue('station.from.address.name', selected.name);
+                            form.setFieldValue('station.from.address.id', selected.id);
+                            setFromStationClosed();
+                          }}
+                        />
                       </Modal>
                       <Button
                         variant="outline"
@@ -302,6 +411,8 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                       data={mockStationList}
                       placeholder="xxx站"
                       searchable
+                      allowDeselect={false}
+                      checkIconPosition="right"
                       key={form.key('station.from.id')}
                       {...form.getInputProps('station.from.id')}
                     />
@@ -321,14 +432,14 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                     </Group>
                   </Input.Label>
 
-                  {form.values.station.from.outside ? (
+                  {form.values.station.to.outside ? (
                     <Group grow preventGrowOverflow={false}>
                       <TextInput
                         withAsterisk
                         placeholder="请点击右侧按钮选择位置"
                         disabled
-                        key={form.key('station.to.address')}
-                        {...form.getInputProps('station.to.address')}
+                        key={form.key('station.to.address.name')}
+                        {...form.getInputProps('station.to.address.name')}
                       />
                       <Modal
                         size="xl"
@@ -336,7 +447,13 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                         onClose={setToStationClosed}
                         title="到站位置 - 地图选点"
                       >
-                        <SearchPOI></SearchPOI>
+                        <SearchPOI
+                          onClose={(selected) => {
+                            form.setFieldValue('station.to.address.name', selected.name);
+                            form.setFieldValue('station.to.address.id', selected.id);
+                            setToStationClosed();
+                          }}
+                        />
                       </Modal>
                       <Button
                         variant="outline"
@@ -353,6 +470,8 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                       data={mockStationList}
                       placeholder="xxx站"
                       searchable
+                      allowDeselect={false}
+                      checkIconPosition="right"
                       key={form.key('station.to.id')}
                       {...form.getInputProps('station.to.id')}
                     />
@@ -365,6 +484,8 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                   data={mockCompanyList}
                   label="运营公司"
                   searchable
+                  allowDeselect={false}
+                  checkIconPosition="right"
                   key={form.key('company.id')}
                   {...form.getInputProps('company.id')}
                 />
@@ -448,7 +569,7 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                   form.setFieldValue('station.intermediate', [
                     ...form.values.station.intermediate,
                     {
-                      station: '',
+                      name: '',
                       time: '',
                       type: '',
                     },
@@ -464,13 +585,22 @@ export const SubmitRun = forwardRef<HTMLFormElement, { onSubmit: (values: any) =
                 verticalSpacing="md"
               >
                 {form.values.station.intermediate.map((_, index) => (
-                  <IntermediateStation stationKey={(index + 1).toString()} form={form} />
+                  <IntermediateStation
+                    stationKey={index}
+                    formContext={useFormContext}
+                    onDelete={() => {
+                      form.setFieldValue(
+                        'station.intermediate',
+                        form.values.station.intermediate.filter((_v, i) => i !== index)
+                      );
+                    }}
+                  />
                 ))}
               </SimpleGrid>
             </Flex>
           </form>
         </CustomCard>
-      </>
-    );
-  }
-);
+      </FormProvider>
+    </>
+  );
+});

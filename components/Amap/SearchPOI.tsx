@@ -3,7 +3,11 @@ import { useState } from 'react';
 
 import MapContainer from './MapComponent';
 
-export function SearchPOI() {
+export function SearchPOI({
+  onClose,
+}: {
+  onClose: (selected: { id: string; name: string }) => void;
+}) {
   const [map, setMap] = useState(null as any);
   const [searchQuery, setSearchQuery] = useState('');
   // const [searchData, setSearchData] = useState(
@@ -92,10 +96,19 @@ export function SearchPOI() {
 
         <MapContainer setMap={setMap} />
 
-        <Group>
-          <Text size="sm">
-            当前选择的地点是：{searchResult.label}，id 是：{searchResult.value}
-          </Text>
+        <Group justify="space-between">
+          <Text size="sm">当前选择的地点是：{searchResult.label}</Text>
+          <Button
+            onClick={() => {
+              if (!searchResult.value) {
+                return;
+              }
+              map?.destroy();
+              onClose({ id: searchResult.value, name: searchResult.label });
+            }}
+          >
+            确定选点
+          </Button>
         </Group>
       </Stack>
     </>

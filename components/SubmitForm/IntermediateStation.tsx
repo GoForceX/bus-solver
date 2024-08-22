@@ -1,27 +1,44 @@
 import { rem, Stack, TextInput } from '@mantine/core';
-import { UseFormReturnType } from '@mantine/form';
 import { TimeInput } from '@mantine/dates';
-import { IconClock } from '@tabler/icons-react';
+import { IconClock, IconX } from '@tabler/icons-react';
 
 import { CustomCard } from '../CustomCard/CustomCard';
 
 export function IntermediateStation({
   stationKey,
-  form,
+  formContext,
+  onDelete,
 }: {
-  stationKey?: string;
-  form: UseFormReturnType<any>;
+  stationKey?: number;
+  formContext: any;
+  onDelete: (stationKey: number) => void;
 }) {
+  const form = formContext();
   return (
     <>
-      <CustomCard title={`中途站 - ${stationKey}`} collapsible withBorder>
-        <Stack gap="sm">
+      <CustomCard
+        key={`__station.intermediate.card_${stationKey}`}
+        title={`中途站 - ${(stationKey || 0) + 1}`}
+        titleEnd={
+          <>
+            <IconX
+              size={16}
+              onClick={() => {
+                onDelete(stationKey || 0);
+              }}
+            />
+          </>
+        }
+        collapsible
+        withBorder
+      >
+        <Stack gap="sm" key={`__station.intermediate.stack_${stationKey}`}>
           <TextInput
             label="车站名称"
             withAsterisk
             placeholder="请输入车站名称"
-            key={form.key(`station.intermediate.${stationKey}.station`)}
-            {...form.getInputProps('')}
+            key={form.key(`station.intermediate.${stationKey}.name`)}
+            {...form.getInputProps(`station.intermediate.${stationKey}.name`)}
           />
           <TimeInput
             label="时间"
