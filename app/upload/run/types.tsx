@@ -1,7 +1,12 @@
 export type IntermediateStationType = {
-  name: string;
-  time: string;
   type: string;
+  time: string;
+  address: {
+    name: string;
+    id: string;
+    lat: string;
+    lon: string;
+  };
 };
 
 export type NewRunType = {
@@ -17,13 +22,23 @@ export type NewRunType = {
     from: {
       outside: boolean;
       id: string;
-      address: string;
+      address: {
+        name: string;
+        id: string;
+        lat: string;
+        lon: string;
+      };
     };
     intermediate: IntermediateStationType[];
     to: {
       outside: boolean;
       id: string;
-      address: string;
+      address: {
+        name: string;
+        id: string;
+        lat: string;
+        lon: string;
+      };
     };
   };
   company: {

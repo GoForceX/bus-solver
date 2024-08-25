@@ -41,6 +41,8 @@ const [FormProvider, useFormContext, useForm] = createFormContext<{
       address: {
         name: string;
         id: string;
+        lat: string;
+        lon: string;
       };
     };
     intermediate: IntermediateStationType[];
@@ -50,6 +52,8 @@ const [FormProvider, useFormContext, useForm] = createFormContext<{
       address: {
         name: string;
         id: string;
+        lat: string;
+        lon: string;
       };
     };
   };
@@ -100,6 +104,8 @@ export const SubmitRun = forwardRef<
           address: {
             name: '',
             id: '',
+            lat: '',
+            lon: '',
           },
         },
         intermediate: [] as IntermediateStationType[],
@@ -109,6 +115,8 @@ export const SubmitRun = forwardRef<
           address: {
             name: '',
             id: '',
+            lat: '',
+            lon: '',
           },
         },
       },
@@ -187,8 +195,8 @@ export const SubmitRun = forwardRef<
           },
         },
         intermediate: {
-          name: (value) => {
-            if (value.length === 0) {
+          address: (value) => {
+            if (value.name.length === 0) {
               return '请输入车站名称';
             }
             return undefined;
@@ -575,7 +583,12 @@ export const SubmitRun = forwardRef<
                   form.setFieldValue('station.intermediate', [
                     ...form.values.station.intermediate,
                     {
-                      name: '',
+                      address: {
+                        name: '',
+                        id: '',
+                        lat: '',
+                        lon: '',
+                      },
                       time: '',
                       type: '',
                     },
