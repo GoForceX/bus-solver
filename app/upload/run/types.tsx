@@ -1,12 +1,15 @@
 export type IntermediateStationType = {
   type: string;
   time: string;
-  address: {
-    name: string;
-    id: string;
-    lat: string;
-    lon: string;
-  };
+  address: AddressType;
+};
+
+export type AddressType = {
+  name: string;
+  id: string;
+  mapid: string;
+  lat: number;
+  lon: number;
 };
 
 export type NewRunType = {
@@ -22,23 +25,13 @@ export type NewRunType = {
     from: {
       outside: boolean;
       id: string;
-      address: {
-        name: string;
-        id: string;
-        lat: string;
-        lon: string;
-      };
+      address: AddressType;
     };
     intermediate: IntermediateStationType[];
     to: {
       outside: boolean;
       id: string;
-      address: {
-        name: string;
-        id: string;
-        lat: string;
-        lon: string;
-      };
+      address: AddressType;
     };
   };
   company: {

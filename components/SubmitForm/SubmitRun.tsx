@@ -21,57 +21,11 @@ import { forwardRef, useEffect, useRef, useState } from 'react';
 
 import { plateProvince, plateValidate } from '@/app/upload/run/plateValidate';
 import { CustomCard } from '../CustomCard/CustomCard';
-import { IntermediateStationType } from '@/app/upload/run/types';
+import { IntermediateStationType, NewRunType } from '@/app/upload/run/types';
 import { IntermediateStation } from './IntermediateStation';
 import { SearchPOI } from '../Amap/SearchPOI';
 
-const [FormProvider, useFormContext, useForm] = createFormContext<{
-  plate: {
-    number: {
-      province: string;
-      detail: string;
-    };
-    type: string;
-    otherDesc: string;
-  };
-  station: {
-    from: {
-      outside: boolean;
-      id: string;
-      address: {
-        name: string;
-        id: string;
-        lat: string;
-        lon: string;
-      };
-    };
-    intermediate: IntermediateStationType[];
-    to: {
-      outside: boolean;
-      id: string;
-      address: {
-        name: string;
-        id: string;
-        lat: string;
-        lon: string;
-      };
-    };
-  };
-  company: {
-    id: string;
-    desc: string;
-  };
-  schedule: {
-    departTime: string;
-    frequency: string;
-    explain: string;
-  };
-  shuttle: {
-    enabled: boolean;
-    startTime: string;
-    endTime: string;
-  };
-}>();
+const [FormProvider, useFormContext, useForm] = createFormContext<NewRunType>();
 
 export const SubmitRun = forwardRef<
   HTMLFormElement,
@@ -104,8 +58,9 @@ export const SubmitRun = forwardRef<
           address: {
             name: '',
             id: '',
-            lat: '',
-            lon: '',
+            mapid: '',
+            lon: 116.397428,
+            lat: 39.90923,
           },
         },
         intermediate: [] as IntermediateStationType[],
@@ -115,8 +70,9 @@ export const SubmitRun = forwardRef<
           address: {
             name: '',
             id: '',
-            lat: '',
-            lon: '',
+            mapid: '',
+            lon: 116.397428,
+            lat: 39.90923,
           },
         },
       },
@@ -409,7 +365,9 @@ export const SubmitRun = forwardRef<
                         <SearchPOI
                           onClose={(selected) => {
                             form.setFieldValue('station.from.address.name', selected.name);
-                            form.setFieldValue('station.from.address.id', selected.id);
+                            form.setFieldValue('station.from.address.mapid', selected.id);
+                            form.setFieldValue('station.from.address.lon', selected.lon);
+                            form.setFieldValue('station.from.address.lat', selected.lat);
                             setFromStationClosed();
                           }}
                         />
@@ -431,8 +389,8 @@ export const SubmitRun = forwardRef<
                       searchable
                       allowDeselect={false}
                       checkIconPosition="right"
-                      key={form.key('station.from.id')}
-                      {...form.getInputProps('station.from.id')}
+                      key={form.key('station.from.address.id')}
+                      {...form.getInputProps('station.from.address.id')}
                     />
                   )}
                 </div>
@@ -468,7 +426,9 @@ export const SubmitRun = forwardRef<
                         <SearchPOI
                           onClose={(selected) => {
                             form.setFieldValue('station.to.address.name', selected.name);
-                            form.setFieldValue('station.to.address.id', selected.id);
+                            form.setFieldValue('station.to.address.mapid', selected.id);
+                            form.setFieldValue('station.to.address.lon', selected.lon);
+                            form.setFieldValue('station.to.address.lat', selected.lat);
                             setToStationClosed();
                           }}
                         />
@@ -490,8 +450,8 @@ export const SubmitRun = forwardRef<
                       searchable
                       allowDeselect={false}
                       checkIconPosition="right"
-                      key={form.key('station.to.id')}
-                      {...form.getInputProps('station.to.id')}
+                      key={form.key('station.to.address.id')}
+                      {...form.getInputProps('station.to.address.id')}
                     />
                   )}
                 </div>
@@ -586,8 +546,9 @@ export const SubmitRun = forwardRef<
                       address: {
                         name: '',
                         id: '',
-                        lat: '',
-                        lon: '',
+                        mapid: '',
+                        lon: 116.397428,
+                        lat: 39.90923,
                       },
                       time: '',
                       type: '',
