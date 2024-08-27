@@ -295,14 +295,14 @@ export const SubmitRun = forwardRef<
                   onBlur: () => {
                     form.setFieldValue(
                       'plate.number.detail',
-                      form.values.plate.number.detail.toUpperCase()
+                      form.getValues().plate.number.detail.toUpperCase()
                     );
                   },
                 }}
                 key={form.key('plate.number.detail')}
                 {...form.getInputProps('plate.number.detail')}
                 leftSection={
-                  form.values.plate.type === 'other' ? undefined : (
+                  form.getValues().plate.type === 'other' ? undefined : (
                     <Select
                       placeholder="—"
                       data={plateProvince}
@@ -327,7 +327,7 @@ export const SubmitRun = forwardRef<
                     />
                   )
                 }
-                leftSectionWidth={form.values.plate.type === 'other' ? undefined : rem(40)}
+                leftSectionWidth={form.getValues().plate.type === 'other' ? undefined : rem(40)}
               />
               <SimpleGrid
                 cols={{ base: 1, sm: 2 }}
@@ -347,7 +347,7 @@ export const SubmitRun = forwardRef<
                     </Group>
                   </Input.Label>
 
-                  {form.values.station.from.outside ? (
+                  {form.getValues().station.from.outside ? (
                     <Group grow preventGrowOverflow={false}>
                       <TextInput
                         withAsterisk
@@ -408,7 +408,7 @@ export const SubmitRun = forwardRef<
                     </Group>
                   </Input.Label>
 
-                  {form.values.station.to.outside ? (
+                  {form.getValues().station.to.outside ? (
                     <Group grow preventGrowOverflow={false}>
                       <TextInput
                         withAsterisk
@@ -497,7 +497,7 @@ export const SubmitRun = forwardRef<
                   </Group>
                 </Radio.Group>
               </SimpleGrid>
-              {form.values.schedule.frequency === 'other' ? (
+              {form.getValues().schedule.frequency === 'other' ? (
                 <TextInput
                   withAsterisk
                   label="班次说明"
@@ -511,7 +511,7 @@ export const SubmitRun = forwardRef<
                 key={form.key('shuttle.enabled')}
                 {...form.getInputProps('shuttle.enabled')}
               />
-              {form.values.shuttle.enabled ? (
+              {form.getValues().shuttle.enabled ? (
                 <SimpleGrid
                   cols={{ base: 1, sm: 2 }}
                   spacing={{ base: 10, sm: 'lg' }}
@@ -541,7 +541,7 @@ export const SubmitRun = forwardRef<
                 variant="outline"
                 onClick={() => {
                   form.setFieldValue('station.intermediate', [
-                    ...form.values.station.intermediate,
+                    ...form.getValues().station.intermediate,
                     {
                       address: {
                         name: '',
@@ -564,10 +564,10 @@ export const SubmitRun = forwardRef<
                     'station.intermediate',
                     (() => {
                       if (!destination) {
-                        return form.values.station.intermediate;
+                        return form.getValues().station.intermediate;
                       }
 
-                      const result = Array.from(form.values.station.intermediate);
+                      const result = Array.from(form.getValues().station.intermediate);
                       const [removed] = result.splice(source.index, 1);
                       result.splice(destination.index, 0, removed);
                       return result;
@@ -575,7 +575,7 @@ export const SubmitRun = forwardRef<
                   );
                   form.setTouched({ 'station.intermediate': true });
                   // verify all fields
-                  form.values.station.intermediate.forEach((_, index) => {
+                  form.getValues().station.intermediate.forEach((_, index) => {
                     form.validateField(`station.intermediate.${index}.name`);
                     form.validateField(`station.intermediate.${index}.time`);
                     form.validateField(`station.intermediate.${index}.type`);
@@ -585,7 +585,7 @@ export const SubmitRun = forwardRef<
                 <Droppable droppableId="dnd-list" direction="vertical">
                   {(provided) => (
                     <Stack {...provided.droppableProps} ref={provided.innerRef}>
-                      {form.values.station.intermediate.map((_, index) => (
+                      {form.getValues().station.intermediate.map((_, index) => (
                         <Draggable
                           key={`__intermediate.${index}`}
                           index={index}
@@ -612,7 +612,9 @@ export const SubmitRun = forwardRef<
                                 onDelete={() => {
                                   form.setFieldValue(
                                     'station.intermediate',
-                                    form.values.station.intermediate.filter((_v, i) => i !== index)
+                                    form
+                                      .getValues()
+                                      .station.intermediate.filter((_v, i) => i !== index)
                                   );
                                 }}
                               />

@@ -15,5 +15,6 @@ module.exports = {
     'import/extensions': 'off',
     quotes: ['error', 'single'],
     'no-spaced-func': 'off',
+    'linebreak-style': 'off',
   },
 };

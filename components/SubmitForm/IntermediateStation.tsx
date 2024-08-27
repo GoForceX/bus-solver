@@ -78,8 +78,8 @@ export const IntermediateStation = forwardRef<
 
           <div>
             <Input.Label required>车站名称</Input.Label>
-            {form.values.station.intermediate[stationKey].type ? (
-              form.values.station.intermediate[stationKey].type === 'station' ? (
+            {form.getValues().station.intermediate[stationKey].type ? (
+              form.getValues().station.intermediate[stationKey].type === 'station' ? (
                 <Select
                   withAsterisk
                   data={mockStationList}
