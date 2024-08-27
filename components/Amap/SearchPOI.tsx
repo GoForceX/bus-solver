@@ -1,6 +1,7 @@
-import { Group, TextInput, Button, Text, Stack, Divider, Tabs, rem, Space } from '@mantine/core';
+import { Group, TextInput, Button, Text, Stack, Divider, Tabs, rem, Space, Box } from '@mantine/core';
 import { useState } from 'react';
 import { IconSearch, IconAdjustmentsPin } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 
 import MapContainer from './MapComponent';
 
@@ -86,6 +87,14 @@ export function SearchPOI({
           defaultValue="search"
           value={activeTab}
           onChange={(value) => {
+            if (!searchResult.name) {
+              notifications.show({
+                title: '请先搜索地点',
+                message: '请先搜索地点，然后再进行微调',
+                color: 'red',
+              });
+              return;
+            }
             if (value === 'search') {
               map?.clearMap();
               map?.add(markers);
@@ -179,11 +188,15 @@ export function SearchPOI({
         <Divider />
 
         <Group justify="space-between">
-          <Text size="sm">
-            当前选择的地点是：{searchResult.name}, {searchResult.lat}
-            {searchResult.lat >= 0 ? 'N' : 'S'} {searchResult.lon}
-            {searchResult.lon >= 0 ? 'E' : 'W'}{' '}
-          </Text>
+          {searchResult.name ? (
+            <Text size="sm">
+              当前选择的地点是：{searchResult.name}, {searchResult.lat}
+              {searchResult.lat >= 0 ? 'N' : 'S'} {searchResult.lon}
+              {searchResult.lon >= 0 ? 'E' : 'W'}{' '}
+            </Text>
+          ) : (
+            <Box />
+          )}
           <Button
             onClick={() => {
               if (!searchResult.id) {

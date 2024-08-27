@@ -7,8 +7,11 @@ import {
   createTheme,
   Container,
 } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 
 import { AppHeader } from '@/components/AppHeader/AppHeader';
+
+import '@mantine/notifications/styles.css';
 
 export const metadata = {
   title: '望青客运信息站',
@@ -48,6 +51,7 @@ export default function RootLayout({ children }: { children: any }) {
       </head>
       <body>
         <MantineProvider theme={theme} defaultColorScheme="auto">
+          <Notifications />
           <AppHeader />
           <Container>{children}</Container>
         </MantineProvider>
