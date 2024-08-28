@@ -8,6 +8,7 @@ import {
   Select,
   Stack,
   Text,
+  Textarea,
   TextInput,
 } from '@mantine/core';
 import { TimeInput } from '@mantine/dates';
@@ -87,55 +88,66 @@ export const IntermediateStation = forwardRef<
                   searchable
                   allowDeselect={false}
                   checkIconPosition="right"
-                  key={form.key(`station.intermediate.${stationKey}.address.id`)}
-                  {...form.getInputProps(`station.intermediate.${stationKey}.address.id`)}
+                  key={form.key(`station.intermediate.${stationKey}.id`)}
+                  {...form.getInputProps(`station.intermediate.${stationKey}.id`)}
                 />
               ) : (
-                <Group grow preventGrowOverflow={false}>
-                  <TextInput
-                    withAsterisk
-                    placeholder="请点击右侧按钮选择位置"
-                    disabled
-                    key={form.key(`station.intermediate.${stationKey}.address.name`)}
-                    {...form.getInputProps(`station.intermediate.${stationKey}.address.name`)}
-                  />
-                  <Modal
-                    size="xl"
-                    opened={stationOpened}
-                    onClose={setStationClosed}
-                    title="中途站位置 - 地图选点"
-                  >
-                    <SearchPOI
-                      onClose={(selected) => {
-                        form.setFieldValue(
-                          `station.intermediate.${stationKey}.address.name`,
-                          selected.name
-                        );
-                        form.setFieldValue(
-                          `station.intermediate.${stationKey}.address.mapid`,
-                          selected.id
-                        );
-                        form.setFieldValue(
-                          `station.intermediate.${stationKey}.address.lat`,
-                          selected.lat
-                        );
-                        form.setFieldValue(
-                          `station.intermediate.${stationKey}.address.lon`,
-                          selected.lon
-                        );
-                        setStationClosed();
-                      }}
+                <Stack gap="xs">
+                  <Text className={classes.shadedText}>
+                    {form.getValues().station.intermediate[stationKey].address.name
+                      ? `已选中: ${form.getValues().station.intermediate[stationKey].address.name}`
+                      : '请点击按钮选择位置'}
+                  </Text>
+                  <Group preventGrowOverflow={false} wrap="nowrap">
+                    <TextInput
+                      withAsterisk
+                      placeholder="站点别名/简称"
+                      style={{ flexGrow: 1 }}
+                      key={form.key(`station.intermediate.${stationKey}.nickname`)}
+                      {...form.getInputProps(`station.intermediate.${stationKey}.nickname`)}
                     />
-                  </Modal>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setStationOpened();
-                    }}
-                  >
-                    选择位置
-                  </Button>
-                </Group>
+                    <Modal
+                      size="xl"
+                      opened={stationOpened}
+                      onClose={setStationClosed}
+                      title="中途站位置 - 地图选点"
+                    >
+                      <SearchPOI
+                        onClose={(selected) => {
+                          form.setFieldValue(
+                            `station.intermediate.${stationKey}.address.name`,
+                            selected.name
+                          );
+                          form.setFieldValue(
+                            `station.intermediate.${stationKey}.address.mapid`,
+                            selected.id
+                          );
+                          form.setFieldValue(
+                            `station.intermediate.${stationKey}.address.lat`,
+                            selected.lat
+                          );
+                          form.setFieldValue(
+                            `station.intermediate.${stationKey}.address.lon`,
+                            selected.lon
+                          );
+                          form.setFieldValue(
+                            `station.intermediate.${stationKey}.address.administrative`,
+                            selected.administrative
+                          );
+                          setStationClosed();
+                        }}
+                      />
+                    </Modal>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setStationOpened();
+                      }}
+                    >
+                      选择位置
+                    </Button>
+                  </Group>
+                </Stack>
               )
             ) : (
               <Text className={classes.shadedText}>请先选择车站类型</Text>
@@ -148,6 +160,14 @@ export const IntermediateStation = forwardRef<
             leftSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />}
             key={form.key(`station.intermediate.${stationKey}.time`)}
             {...form.getInputProps(`station.intermediate.${stationKey}.time`)}
+          />
+
+          <Textarea
+            label="备注"
+            autosize
+            minRows={1}
+            key={form.key(`station.intermediate.${stationKey}.remarks`)}
+            {...form.getInputProps(`station.intermediate.${stationKey}.remarks`)}
           />
         </Stack>
       </CustomCard>

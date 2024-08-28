@@ -1,15 +1,25 @@
 export type IntermediateStationType = {
   type: string;
   time: string;
+  id: string;
+  nickname: string;
+  address: AddressType;
+  remarks: string;
+};
+
+export type EndpointStationType = {
+  outside: boolean;
+  id: string;
+  nickname: string;
   address: AddressType;
 };
 
 export type AddressType = {
   name: string;
-  id: string;
   mapid: string;
   lat: number;
   lon: number;
+  administrative: string;
 };
 
 export type NewRunType = {
@@ -22,17 +32,9 @@ export type NewRunType = {
     otherDesc: string;
   };
   station: {
-    from: {
-      outside: boolean;
-      id: string;
-      address: AddressType;
-    };
+    from: EndpointStationType;
     intermediate: IntermediateStationType[];
-    to: {
-      outside: boolean;
-      id: string;
-      address: AddressType;
-    };
+    to: EndpointStationType;
   };
   company: {
     id: string;

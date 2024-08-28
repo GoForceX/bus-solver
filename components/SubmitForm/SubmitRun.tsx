@@ -2,6 +2,7 @@ import {
   Flex,
   Radio,
   Group,
+  Text,
   TextInput,
   Select,
   rem,
@@ -25,6 +26,8 @@ import { IntermediateStationType, NewRunType } from '@/app/upload/run/types';
 import { IntermediateStation } from './IntermediateStation';
 import { SearchPOI } from '../Amap/SearchPOI';
 
+import classes from './global.module.css';
+
 const [FormProvider, useFormContext, useForm] = createFormContext<NewRunType>();
 
 export const SubmitRun = forwardRef<
@@ -32,8 +35,10 @@ export const SubmitRun = forwardRef<
   {
     onSubmit: (values: any) => void;
     onAddStation: (keys: string[]) => void;
+    stationList: any[];
+    companyList: any[];
   }
->(({ onSubmit, onAddStation }, ref) => {
+>(({ onSubmit, onAddStation, stationList, companyList }, ref) => {
   const [fromStationOpened, { open: setFromStationOpened, close: setFromStationClosed }] =
     useDisclosure(false);
   const [toStationOpened, { open: setToStationOpened, close: setToStationClosed }] =
@@ -55,24 +60,26 @@ export const SubmitRun = forwardRef<
         from: {
           outside: false,
           id: '',
+          nickname: '',
           address: {
             name: '',
-            id: '',
             mapid: '',
             lon: 116.397428,
             lat: 39.90923,
+            administrative: '',
           },
         },
         intermediate: [] as IntermediateStationType[],
         to: {
           outside: false,
           id: '',
+          nickname: '',
           address: {
             name: '',
-            id: '',
             mapid: '',
             lon: 116.397428,
             lat: 39.90923,
+            administrative: '',
           },
         },
       },
@@ -130,7 +137,7 @@ export const SubmitRun = forwardRef<
             return undefined;
           },
           address: (value, values) => {
-            if (values.station.from.outside && value.id.length === 0) {
+            if (values.station.from.outside && values.station.from.id.length === 0) {
               return '请填写发站地址';
             }
             return undefined;
@@ -144,7 +151,7 @@ export const SubmitRun = forwardRef<
             return undefined;
           },
           address: (value, values) => {
-            if (values.station.to.outside && value.id.length === 0) {
+            if (values.station.to.outside && values.station.to.id.length === 0) {
               return '请填写到站地址';
             }
             return undefined;
@@ -216,18 +223,6 @@ export const SubmitRun = forwardRef<
       },
     },
   });
-
-  const mockStationList = [
-    { value: 'S13100001', label: '（河北省廊坊市）廊坊客运总站' },
-    { value: 'S11000001', label: '（北京市）六里桥客运主枢纽' },
-    { value: 'ADD', label: '+ 添加新站' },
-  ];
-
-  const mockCompanyList = [
-    { value: 'C13100001', label: '廊坊通利' },
-    { value: 'C13100002', label: '廊坊交运' },
-    { value: 'ADD', label: '+ 添加新公司' },
-  ];
 
   const addStationListRef = useRef(addStationList);
 
@@ -348,49 +343,57 @@ export const SubmitRun = forwardRef<
                   </Input.Label>
 
                   {form.getValues().station.from.outside ? (
-                    <Group grow preventGrowOverflow={false}>
-                      <TextInput
-                        withAsterisk
-                        placeholder="请点击右侧按钮选择位置"
-                        disabled
-                        key={form.key('station.from.address.name')}
-                        {...form.getInputProps('station.from.address.name')}
-                      />
-                      <Modal
-                        size="xl"
-                        opened={fromStationOpened}
-                        onClose={setFromStationClosed}
-                        title="发站位置 - 地图选点"
-                      >
-                        <SearchPOI
-                          onClose={(selected) => {
-                            form.setFieldValue('station.from.address.name', selected.name);
-                            form.setFieldValue('station.from.address.mapid', selected.id);
-                            form.setFieldValue('station.from.address.lon', selected.lon);
-                            form.setFieldValue('station.from.address.lat', selected.lat);
-                            setFromStationClosed();
-                          }}
+                    <Stack gap="xs">
+                      <Text className={classes.shadedText}>
+                        {form.getValues().station.from.address.name
+                          ? `已选中: ${form.getValues().station.from.address.name}`
+                          : '请点击按钮选择位置'}
+                      </Text>
+                      <Group preventGrowOverflow={false} wrap="nowrap">
+                        <TextInput
+                          withAsterisk
+                          placeholder="站点别名/简称"
+                          style={{ flexGrow: 1 }}
+                          key={form.key('station.from.nickname')}
+                          {...form.getInputProps('station.from.nickname')}
                         />
-                      </Modal>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setFromStationOpened();
-                        }}
-                      >
-                        选择位置
-                      </Button>
-                    </Group>
+                        <Modal
+                          size="xl"
+                          opened={fromStationOpened}
+                          onClose={setFromStationClosed}
+                          title="发站位置 - 地图选点"
+                        >
+                          <SearchPOI
+                            onClose={(selected) => {
+                              form.setFieldValue('station.from.address.name', selected.name);
+                              form.setFieldValue('station.from.address.mapid', selected.id);
+                              form.setFieldValue('station.from.address.lon', selected.lon);
+                              form.setFieldValue('station.from.address.lat', selected.lat);
+                              form.setFieldValue('station.from.address.administrative', selected.administrative);
+                              setFromStationClosed();
+                            }}
+                          />
+                        </Modal>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setFromStationOpened();
+                          }}
+                        >
+                          选择位置
+                        </Button>
+                      </Group>
+                    </Stack>
                   ) : (
                     <Select
                       withAsterisk
-                      data={mockStationList}
+                      data={stationList}
                       placeholder="xxx站"
                       searchable
                       allowDeselect={false}
                       checkIconPosition="right"
-                      key={form.key('station.from.address.id')}
-                      {...form.getInputProps('station.from.address.id')}
+                      key={form.key('station.from.id')}
+                      {...form.getInputProps('station.from.id')}
                     />
                   )}
                 </div>
@@ -409,49 +412,57 @@ export const SubmitRun = forwardRef<
                   </Input.Label>
 
                   {form.getValues().station.to.outside ? (
-                    <Group grow preventGrowOverflow={false}>
-                      <TextInput
-                        withAsterisk
-                        placeholder="请点击右侧按钮选择位置"
-                        disabled
-                        key={form.key('station.to.address.name')}
-                        {...form.getInputProps('station.to.address.name')}
-                      />
-                      <Modal
-                        size="xl"
-                        opened={toStationOpened}
-                        onClose={setToStationClosed}
-                        title="到站位置 - 地图选点"
-                      >
-                        <SearchPOI
-                          onClose={(selected) => {
-                            form.setFieldValue('station.to.address.name', selected.name);
-                            form.setFieldValue('station.to.address.mapid', selected.id);
-                            form.setFieldValue('station.to.address.lon', selected.lon);
-                            form.setFieldValue('station.to.address.lat', selected.lat);
-                            setToStationClosed();
-                          }}
+                    <Stack gap="xs">
+                      <Text className={classes.shadedText}>
+                        {form.getValues().station.to.address.name
+                          ? `已选中: ${form.getValues().station.to.address.name}`
+                          : '请点击按钮选择位置'}
+                      </Text>
+                      <Group preventGrowOverflow={false} wrap="nowrap">
+                        <TextInput
+                          withAsterisk
+                          placeholder="站点别名/简称"
+                          style={{ flexGrow: 1 }}
+                          key={form.key('station.to.nickname')}
+                          {...form.getInputProps('station.to.nickname')}
                         />
-                      </Modal>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setToStationOpened();
-                        }}
-                      >
-                        选择位置
-                      </Button>
-                    </Group>
+                        <Modal
+                          size="xl"
+                          opened={toStationOpened}
+                          onClose={setToStationClosed}
+                          title="到站位置 - 地图选点"
+                        >
+                          <SearchPOI
+                            onClose={(selected) => {
+                              form.setFieldValue('station.to.address.name', selected.name);
+                              form.setFieldValue('station.to.address.mapid', selected.id);
+                              form.setFieldValue('station.to.address.lon', selected.lon);
+                              form.setFieldValue('station.to.address.lat', selected.lat);
+                              form.setFieldValue('station.to.address.administrative', selected.administrative);
+                              setToStationClosed();
+                            }}
+                          />
+                        </Modal>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setToStationOpened();
+                          }}
+                        >
+                          选择位置
+                        </Button>
+                      </Group>
+                    </Stack>
                   ) : (
                     <Select
                       withAsterisk
-                      data={mockStationList}
+                      data={stationList}
                       placeholder="xxx站"
                       searchable
                       allowDeselect={false}
                       checkIconPosition="right"
-                      key={form.key('station.to.address.id')}
-                      {...form.getInputProps('station.to.address.id')}
+                      key={form.key('station.to.id')}
+                      {...form.getInputProps('station.to.id')}
                     />
                   )}
                 </div>
@@ -459,7 +470,7 @@ export const SubmitRun = forwardRef<
                 <Select
                   withAsterisk
                   placeholder="xxx公司"
-                  data={mockCompanyList}
+                  data={companyList}
                   label="运营公司"
                   searchable
                   allowDeselect={false}
@@ -545,13 +556,16 @@ export const SubmitRun = forwardRef<
                     {
                       address: {
                         name: '',
-                        id: '',
                         mapid: '',
                         lon: 116.397428,
                         lat: 39.90923,
+                        administrative: '',
                       },
                       time: '',
                       type: '',
+                      id: '',
+                      nickname: '',
+                      remarks: '',
                     },
                   ]);
                 }}

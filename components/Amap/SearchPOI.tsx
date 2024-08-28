@@ -1,18 +1,39 @@
-import { Group, TextInput, Button, Text, Stack, Divider, Tabs, rem, Space, Box } from '@mantine/core';
+import {
+  Group,
+  TextInput,
+  Button,
+  Text,
+  Stack,
+  Divider,
+  Tabs,
+  rem,
+  Space,
+  Box,
+  LoadingOverlay,
+} from '@mantine/core';
 import { useState } from 'react';
 import { IconSearch, IconAdjustmentsPin } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+import { useDisclosure } from '@mantine/hooks';
 
 import MapContainer from './MapComponent';
 
 export function SearchPOI({
   onClose,
 }: {
-  onClose: (selected: { id: string; name: string; lon: number; lat: number }) => void;
+  onClose: (selected: {
+    id: string;
+    name: string;
+    lon: number;
+    lat: number;
+    administrative: string;
+  }) => void;
 }) {
   const [map, setMap] = useState(null as any);
   const [markers, setMarkers] = useState([] as any[]);
   const [activeTab, setActiveTab] = useState<string | null>('search');
+
+  const [overlayVisible, { open: openOverlay, close: closeOverlay }] = useDisclosure(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   // const [searchData, setSearchData] = useState(
@@ -27,6 +48,7 @@ export function SearchPOI({
       name: string;
       lon: number;
       lat: number;
+      administrative: string;
     }
   );
 
@@ -58,6 +80,7 @@ export function SearchPOI({
       name: searchResult.name,
       lon: event.lnglat.lng,
       lat: event.lnglat.lat,
+      administrative: searchResult.administrative,
     });
   }
 
@@ -67,15 +90,35 @@ export function SearchPOI({
       name: searchResult.name,
       lon: event.lnglat.lng,
       lat: event.lnglat.lat,
+      administrative: searchResult.administrative,
     });
   }
 
   function onMarkerDragEnd(event: any) {
-    setSearchResult({
-      id: searchResult.id,
-      name: searchResult.name,
-      lon: event.lnglat.lng,
-      lat: event.lnglat.lat,
+    console.log(event);
+
+    openOverlay();
+
+    window.AMap.plugin('AMap.Geocoder', () => {
+      const geocoder = new window.AMap.Geocoder();
+
+      const lnglat = [event.lnglat.lng, event.lnglat.lat];
+
+      geocoder.getAddress(lnglat, (status: string, result: any) => {
+        if (status === 'complete' && result.info === 'OK') {
+          console.log(result);
+
+          setSearchResult({
+            id: searchResult.id,
+            name: searchResult.name,
+            lon: event.lnglat.lng,
+            lat: event.lnglat.lat,
+            administrative: result.regeocode.addressComponent.adcode,
+          });
+
+          closeOverlay();
+        }
+      });
     });
   }
 
@@ -122,6 +165,13 @@ export function SearchPOI({
             </Tabs.Tab>
           </Tabs.List>
 
+          <LoadingOverlay
+            visible={overlayVisible}
+            zIndex={1000}
+            overlayProps={{ radius: 'sm', blur: 2 }}
+            loaderProps={{ type: 'bars' }}
+          />
+
           <MapContainer setMap={setMap} />
 
           <Tabs.Panel value="search">
@@ -153,6 +203,7 @@ export function SearchPOI({
                     name: '',
                     lon: 116.397428,
                     lat: 39.90923,
+                    administrative: '110101',
                   });
                   const placeSearch = new window.AMap.PlaceSearch({
                     pageSize: 5,
@@ -175,6 +226,7 @@ export function SearchPOI({
                       name: event.selected.data.name,
                       lon: event.selected.data.location.lng,
                       lat: event.selected.data.location.lat,
+                      administrative: event.selected.data.adcode,
                     });
                   });
                 }}
@@ -208,6 +260,7 @@ export function SearchPOI({
                 name: searchResult.name,
                 lon: searchResult.lon,
                 lat: searchResult.lat,
+                administrative: searchResult.administrative,
               });
             }}
           >

@@ -1,121 +1,34 @@
-'use client';
+import React from 'react';
 
-import React, { useState } from 'react';
-import { Button, Grid, ScrollArea, Stack, Text } from '@mantine/core';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { SubmitBatch } from '@/components/SubmitForm/SubmitBatch';
 
-import { CustomCard } from '@/components/CustomCard/CustomCard';
-import { SubmitRun } from '@/components/SubmitForm/SubmitRun';
-import { SubmitStation } from '@/components/SubmitForm/SubmitStation';
-import { handleSubmit } from './handleSubmit';
+export default async function Page() {
+  async function getMockStationList() {
+    'use server';
 
-export default function Page() {
-  const formRef = React.useRef<HTMLFormElement>(null);
+    return [
+      { value: 'S13100001', label: '（河北省廊坊市）廊坊客运总站' },
+      { value: 'S11000001', label: '（北京市）六里桥客运主枢纽' },
+      { value: 'ADD', label: '+ 添加新站' },
+    ];
+  }
 
-  const [stationNodes, setStationNodes] = useState(new Map<string, React.ReactNode>());
+  async function getMockCompanyList() {
+    'use server';
 
-  function parseStationKeyToTitle(key: string): string {
-    if (key === 'from') {
-      return '始发站';
-    }
-    if (key === 'to') {
-      return '终点站';
-    }
-    if (key.startsWith('intermediate')) {
-      return `中途站 - ${key.split('.')[1]}`;
-    }
-    return '未知';
+    return [
+      { value: 'C13100001', label: '廊坊通利' },
+      { value: 'C13100002', label: '廊坊交运' },
+      { value: 'ADD', label: '+ 添加新公司' },
+    ];
   }
 
   return (
     <>
-      <Grid>
-        <Grid.Col span={{ base: 12, sm: 9 }}>
-          <Stack gap="sm">
-            <SubmitRun
-              ref={formRef}
-              onSubmit={(value) => {
-                console.log(value);
-                handleSubmit(value);
-              }}
-              onAddStation={(stationKeys) => {
-                console.log(stationKeys);
-
-                stationNodes.forEach((node, key) => {
-                  if (!stationKeys.includes(key)) {
-                    setStationNodes((prev) => {
-                      const newMap = new Map(prev);
-                      newMap.delete(key);
-                      return newMap;
-                    });
-                  }
-                });
-
-                const newMap = new Map();
-
-                stationKeys.forEach((stationKey) => {
-                  if (stationNodes.has(stationKey)) {
-                    newMap.set(stationKey, stationNodes.get(stationKey));
-                  } else {
-                    newMap.set(
-                      stationKey,
-                      <SubmitStation
-                        key={`__station.${stationKey}`}
-                        stationKey={stationKey}
-                        suffix={parseStationKeyToTitle(stationKey)}
-                        onSubmit={(values) => {
-                          console.log(values);
-                        }}
-                      />
-                    );
-                  }
-                });
-
-                // Update the state with the new Map
-                setStationNodes(newMap);
-              }}
-            />
-
-            {Array.from(stationNodes.values())}
-          </Stack>
-        </Grid.Col>
-
-        <Grid.Col span={{ base: 12, sm: 3 }}>
-          <Stack gap="sm">
-            <CustomCard
-              title="上传须知"
-              titleBefore={<IconInfoCircle size={16}></IconInfoCircle>}
-              collapsible
-            >
-              <ScrollArea h={200} scrollbarSize={6} scrollHideDelay={1500}>
-                <Text size="sm">
-                  Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
-                  irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-                  pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui
-                  officia deserunt mollit anim id est laborum.
-                </Text>
-              </ScrollArea>
-            </CustomCard>
-            <CustomCard title="信息确认">
-              <Stack gap="sm">
-                <Button
-                  onClick={() => {
-                    if (formRef.current) {
-                      formRef.current.dispatchEvent(
-                        new Event('submit', { cancelable: true, bubbles: true })
-                      );
-                    }
-                  }}
-                >
-                  上传信息并送审
-                </Button>
-              </Stack>
-            </CustomCard>
-          </Stack>
-        </Grid.Col>
-      </Grid>
+      <SubmitBatch
+        stationList={await getMockStationList()}
+        companyList={await getMockCompanyList()}
+      />
     </>
   );
 }
