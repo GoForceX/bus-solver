@@ -18,22 +18,23 @@ import { TimeInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import { IconClock, IconGripVertical } from '@tabler/icons-react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { FormEventHandler, forwardRef, useEffect, useRef, useState } from 'react';
 
 import { plateProvince, plateValidate } from '@/app/upload/run/plateValidate';
 import { CustomCard } from '../CustomCard/CustomCard';
 import { IntermediateStationType, NewRunType } from '@/app/upload/run/types';
 import { IntermediateStation } from './IntermediateStation';
-import { SearchPOI } from '../Amap/SearchPOI';
 
 import classes from './global.module.css';
+import { compareTime } from '@/app/upload/run/compareTime';
+import { SearchPOI } from '../Amap/SearchPOI';
 
 const [FormProvider, useFormContext, useForm] = createFormContext<NewRunType>();
 
 export const SubmitRun = forwardRef<
   HTMLFormElement,
   {
-    onSubmit: (values: any) => void;
+    onSubmit: FormEventHandler<HTMLFormElement>;
     onAddStation: (keys: string[]) => void;
     stationList: any[];
     companyList: any[];
@@ -54,7 +55,6 @@ export const SubmitRun = forwardRef<
           detail: '',
         },
         type: '',
-        otherDesc: '',
       },
       station: {
         from: {
@@ -108,6 +108,15 @@ export const SubmitRun = forwardRef<
           return undefined;
         },
         number: {
+          province: (value, values) => {
+            if (values.plate.type === 'other') {
+              return undefined;
+            }
+            if (value.length === 0) {
+              form.setFieldError('plate.number.detail', '请选择车牌省份');
+            }
+            return undefined;
+          },
           detail: (value, values) => {
             if (!value) {
               return '车牌号不能为空';
@@ -137,7 +146,7 @@ export const SubmitRun = forwardRef<
             return undefined;
           },
           address: (value, values) => {
-            if (values.station.from.outside && values.station.from.id.length === 0) {
+            if (values.station.from.outside && values.station.from.address.name.length === 0) {
               return '请填写发站地址';
             }
             return undefined;
@@ -151,27 +160,55 @@ export const SubmitRun = forwardRef<
             return undefined;
           },
           address: (value, values) => {
-            if (values.station.to.outside && values.station.to.id.length === 0) {
+            if (values.station.to.outside && values.station.to.address.name.length === 0) {
               return '请填写到站地址';
             }
             return undefined;
           },
         },
         intermediate: {
-          address: (value) => {
-            if (value.name.length === 0) {
+          id: (value, values, path) => {
+            const currentIndex = parseInt(path.split('.')[2], 10);
+            if (
+              values.station.intermediate[currentIndex].type === 'station' &&
+              value.length === 0
+            ) {
+              return '请选择中途车站';
+            }
+            return undefined;
+          },
+          address: (value, values, path) => {
+            const currentIndex = parseInt(path.split('.')[2], 10);
+            if (
+              values.station.intermediate[currentIndex].type !== 'station' &&
+              value.name.length === 0
+            ) {
               return '请输入车站名称';
             }
             return undefined;
           },
           time: (value, values, path) => {
             const currentIndex = parseInt(path.split('.')[2], 10);
-            if (value.length === 0) {
+            if (value.subTime.length === 0) {
+              form.setFieldError(`station.intermediate.${currentIndex}.time.subTime`, '请选择时间');
               return '请选择时间';
+            }
+            if (currentIndex === 0) {
+              if (value.day === 0 && value.subTime <= values.schedule.departTime) {
+                form.setFieldError(
+                  `station.intermediate.${currentIndex}.time.subTime`,
+                  '时间应晚于前一站点'
+                );
+                return '时间应晚于前一站点';
+              }
             }
             if (values.station.intermediate[currentIndex - 1]?.time) {
               const previousTime = values.station.intermediate[currentIndex - 1].time;
-              if (value <= previousTime) {
+              if (!compareTime(value, previousTime)) {
+                form.setFieldError(
+                  `station.intermediate.${currentIndex}.time.subTime`,
+                  '时间应晚于前一站点'
+                );
                 return '时间应晚于前一站点';
               }
             }
@@ -222,6 +259,18 @@ export const SubmitRun = forwardRef<
         },
       },
     },
+    onValuesChange: (values, changedValues) => {
+      console.log({ values, changedValues });
+
+      values.station.intermediate.forEach((item, index) => {
+        handleStationChange(
+          `intermediate.${index}`,
+          changedValues.station.intermediate[index]?.id,
+          item.id,
+          item.type !== 'station'
+        );
+      });
+    },
   });
 
   const addStationListRef = useRef(addStationList);
@@ -230,37 +279,67 @@ export const SubmitRun = forwardRef<
     addStationListRef.current = addStationList;
   }, [addStationList]);
 
-  const handleStationChange = (key: string, previousValue: string, value: string) => {
-    if (value === 'ADD') {
-      const newList = [...addStationListRef.current, key];
+  const handleStationChange = (
+    key: string,
+    previousValue: string,
+    value: string,
+    flag: boolean
+  ) => {
+    if (previousValue === 'ADD' || flag) {
+      const newList = addStationListRef.current.filter((v) => v !== key);
       newList.sort();
       setAddStationList(newList);
       onAddStation(newList);
     }
 
-    if (previousValue === 'ADD') {
-      const newList = addStationListRef.current.filter((v) => v !== key);
+    if (value === 'ADD' && !flag) {
+      const newList = [...addStationListRef.current, key];
       newList.sort();
       setAddStationList(newList);
       onAddStation(newList);
     }
   };
 
+  form.watch('plate.type', () => {
+    form.validateField('plate.number.province');
+    form.validateField('plate.number.detail');
+  });
+
+  form.watch('plate.number.province', () => {
+    form.validateField('plate.number.province');
+    form.validateField('plate.number.detail');
+  });
+
+  form.watch('plate.number.detail', () => {
+    form.validateField('plate.number.detail');
+  });
+
   form.watch('station.from.id', ({ previousValue, value, touched, dirty }) => {
     console.log({ previousValue, value, touched, dirty });
-    handleStationChange('from', previousValue, value);
+    handleStationChange('from', previousValue, value, form.getValues().station.from.outside);
   });
 
   form.watch('station.to.id', ({ previousValue, value, touched, dirty }) => {
     console.log({ previousValue, value, touched, dirty });
-    handleStationChange('to', previousValue, value);
+    handleStationChange('to', previousValue, value, form.getValues().station.to.outside);
   });
 
   return (
     <>
       <FormProvider form={form}>
         <CustomCard title="填写班线信息" collapsible>
-          <form ref={ref} id="submitRun" onSubmit={form.onSubmit((values) => onSubmit(values))}>
+          <form
+            ref={ref}
+            id="submitRun"
+            onSubmit={form.onSubmit(
+              (values) => console.log(values),
+              (errors) => {
+                console.log(errors);
+                const firstErrorPath = Object.keys(errors)[0];
+                form.getInputNode(firstErrorPath)?.focus();
+              }
+            )}
+          >
             <Flex align="stretch" direction="column" justify="center" gap="md">
               <Radio.Group
                 label="选择车牌类型"
@@ -344,11 +423,15 @@ export const SubmitRun = forwardRef<
 
                   {form.getValues().station.from.outside ? (
                     <Stack gap="xs">
-                      <Text className={classes.shadedText}>
-                        {form.getValues().station.from.address.name
-                          ? `已选中: ${form.getValues().station.from.address.name}`
-                          : '请点击按钮选择位置'}
-                      </Text>
+                      {form.getValues().station.from.address.name ? (
+                        <Text className={classes.shadedText}>
+                          {`已选中: ${form.getValues().station.from.address.name}`}
+                        </Text>
+                      ) : (
+                        <Text className={classes.shadedText} c="red">
+                          请点击按钮选择位置
+                        </Text>
+                      )}
                       <Group preventGrowOverflow={false} wrap="nowrap">
                         <TextInput
                           withAsterisk
@@ -369,7 +452,10 @@ export const SubmitRun = forwardRef<
                               form.setFieldValue('station.from.address.mapid', selected.id);
                               form.setFieldValue('station.from.address.lon', selected.lon);
                               form.setFieldValue('station.from.address.lat', selected.lat);
-                              form.setFieldValue('station.from.address.administrative', selected.administrative);
+                              form.setFieldValue(
+                                'station.from.address.administrative',
+                                selected.administrative
+                              );
                               setFromStationClosed();
                             }}
                           />
@@ -413,11 +499,15 @@ export const SubmitRun = forwardRef<
 
                   {form.getValues().station.to.outside ? (
                     <Stack gap="xs">
-                      <Text className={classes.shadedText}>
-                        {form.getValues().station.to.address.name
-                          ? `已选中: ${form.getValues().station.to.address.name}`
-                          : '请点击按钮选择位置'}
-                      </Text>
+                      {form.getValues().station.to.address.name ? (
+                        <Text className={classes.shadedText}>
+                          {`已选中: ${form.getValues().station.to.address.name}`}
+                        </Text>
+                      ) : (
+                        <Text className={classes.shadedText} c="red">
+                          请点击按钮选择位置
+                        </Text>
+                      )}
                       <Group preventGrowOverflow={false} wrap="nowrap">
                         <TextInput
                           withAsterisk
@@ -438,7 +528,10 @@ export const SubmitRun = forwardRef<
                               form.setFieldValue('station.to.address.mapid', selected.id);
                               form.setFieldValue('station.to.address.lon', selected.lon);
                               form.setFieldValue('station.to.address.lat', selected.lat);
-                              form.setFieldValue('station.to.address.administrative', selected.administrative);
+                              form.setFieldValue(
+                                'station.to.address.administrative',
+                                selected.administrative
+                              );
                               setToStationClosed();
                             }}
                           />
@@ -561,7 +654,10 @@ export const SubmitRun = forwardRef<
                         lat: 39.90923,
                         administrative: '',
                       },
-                      time: '',
+                      time: {
+                        day: 0,
+                        subTime: '',
+                      },
                       type: '',
                       id: '',
                       nickname: '',

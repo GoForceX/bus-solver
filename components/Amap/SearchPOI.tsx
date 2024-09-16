@@ -106,8 +106,6 @@ export function SearchPOI({
 
       geocoder.getAddress(lnglat, (status: string, result: any) => {
         if (status === 'complete' && result.info === 'OK') {
-          console.log(result);
-
           setSearchResult({
             id: searchResult.id,
             name: searchResult.name,
@@ -117,6 +115,13 @@ export function SearchPOI({
           });
 
           closeOverlay();
+        }
+        if (status === 'no_data' || Object.keys(result).length === 0) {
+          notifications.show({
+            title: '无法解析地址',
+            message: '无法解析地址，请手动输入地址',
+            color: 'yellow',
+          });
         }
       });
     });

@@ -93,11 +93,15 @@ export const IntermediateStation = forwardRef<
                 />
               ) : (
                 <Stack gap="xs">
-                  <Text className={classes.shadedText}>
-                    {form.getValues().station.intermediate[stationKey].address.name
-                      ? `已选中: ${form.getValues().station.intermediate[stationKey].address.name}`
-                      : '请点击按钮选择位置'}
-                  </Text>
+                  {form.getValues().station.intermediate[stationKey].address.name ? (
+                    <Text className={classes.shadedText}>
+                      {`已选中: ${form.getValues().station.intermediate[stationKey].address.name}`}
+                    </Text>
+                  ) : (
+                    <Text className={classes.shadedText} c="red">
+                      请点击按钮选择位置
+                    </Text>
+                  )}
                   <Group preventGrowOverflow={false} wrap="nowrap">
                     <TextInput
                       withAsterisk
@@ -150,7 +154,9 @@ export const IntermediateStation = forwardRef<
                 </Stack>
               )
             ) : (
-              <Text className={classes.shadedText}>请先选择车站类型</Text>
+              <Text className={classes.shadedText} c="red">
+                请先选择车站类型
+              </Text>
             )}
           </div>
 
@@ -158,8 +164,8 @@ export const IntermediateStation = forwardRef<
             label="时间"
             withAsterisk
             leftSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />}
-            key={form.key(`station.intermediate.${stationKey}.time`)}
-            {...form.getInputProps(`station.intermediate.${stationKey}.time`)}
+            key={form.key(`station.intermediate.${stationKey}.time.subTime`)}
+            {...form.getInputProps(`station.intermediate.${stationKey}.time.subTime`)}
           />
 
           <Textarea

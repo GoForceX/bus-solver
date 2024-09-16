@@ -28,7 +28,7 @@ export function SubmitBatch({
       return '终点站';
     }
     if (key.startsWith('intermediate')) {
-      return `中途站 - ${key.split('.')[1]}`;
+      return `中途站 - ${parseInt(key.split('.')[1], 10) + 1}`;
     }
     return '未知';
   }

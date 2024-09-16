@@ -1,6 +1,6 @@
 export type IntermediateStationType = {
   type: string;
-  time: string;
+  time: TimeType;
   id: string;
   nickname: string;
   address: AddressType;
@@ -22,6 +22,11 @@ export type AddressType = {
   administrative: string;
 };
 
+export type TimeType = {
+  day: number;
+  subTime: string;
+};
+
 export type NewRunType = {
   plate: {
     number: {
@@ -29,7 +34,6 @@ export type NewRunType = {
       detail: string;
     };
     type: string;
-    otherDesc: string;
   };
   station: {
     from: EndpointStationType;
