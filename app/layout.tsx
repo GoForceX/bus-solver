@@ -10,6 +10,7 @@ import {
 import { Notifications } from '@mantine/notifications';
 
 import { AppHeader } from '@/components/AppHeader/AppHeader';
+import StoreProvider from './StoreProvider';
 
 import '@mantine/notifications/styles.css';
 
@@ -50,11 +51,13 @@ export default function RootLayout({ children }: { children: any }) {
         />
       </head>
       <body>
-        <MantineProvider theme={theme} defaultColorScheme="auto">
-          <Notifications />
-          <AppHeader />
-          <Container>{children}</Container>
-        </MantineProvider>
+        <StoreProvider>
+          <MantineProvider theme={theme} defaultColorScheme="auto">
+            <Notifications />
+            <AppHeader />
+            <Container>{children}</Container>
+          </MantineProvider>
+        </StoreProvider>
       </body>
     </html>
   );
