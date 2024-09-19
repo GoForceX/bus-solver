@@ -1,0 +1,3 @@
+.mantine-Stepper-steps > button:last-child {
+  min-height: unset;
+}

@@ -8,6 +8,7 @@ import {
   Container,
 } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { ModalsProvider } from '@mantine/modals';
 
 import { AppHeader } from '@/components/AppHeader/AppHeader';
 import StoreProvider from './StoreProvider';
@@ -53,9 +54,11 @@ export default function RootLayout({ children }: { children: any }) {
       <body>
         <StoreProvider>
           <MantineProvider theme={theme} defaultColorScheme="auto">
-            <Notifications />
-            <AppHeader />
-            <Container>{children}</Container>
+            <ModalsProvider>
+              <Notifications />
+              <AppHeader />
+              <Container>{children}</Container>
+            </ModalsProvider>
           </MantineProvider>
         </StoreProvider>
       </body>
