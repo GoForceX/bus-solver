@@ -1,35 +1,27 @@
 import {
   Flex,
-  Radio,
   Group,
   Text,
-  TextInput,
-  Select,
   rem,
   SimpleGrid,
-  Checkbox,
   Button,
-  Input,
   Modal,
   Stack,
+  InputLabel,
 } from '@mantine/core';
-import { createFormContext } from '@mantine/form';
-import { TimeInput } from '@mantine/dates';
+import { Radio, TextInput, Select, Checkbox, TimeInput } from 'react-hook-form-mantine';
+import { FormProvider, useFormContext, SubmitHandler, useWatch } from 'react-hook-form';
 import { useDisclosure } from '@mantine/hooks';
 import { IconClock, IconGripVertical } from '@tabler/icons-react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { FormEventHandler, forwardRef, useEffect, useRef, useState } from 'react';
 
-import { plateProvince, plateValidate } from '@/app/upload/run/plateValidate';
+import { plateProvince } from '@/app/upload/run/plateValidate';
 import { CustomCard } from '../CustomCard/CustomCard';
-import { IntermediateStationType, NewRunType } from '@/app/upload/run/types';
+import { NewRunType } from '@/app/upload/run/types';
 import { IntermediateStation } from './IntermediateStation';
-
 import classes from './global.module.css';
-import { compareTime } from '@/app/upload/run/compareTime';
 import { SearchPOI } from '../Amap/SearchPOI';
-
-const [FormProvider, useFormContext, useForm] = createFormContext<NewRunType>();
 
 export const SubmitRun = forwardRef<
   HTMLFormElement,
@@ -46,231 +38,183 @@ export const SubmitRun = forwardRef<
     useDisclosure(false);
   const [addStationList, setAddStationList] = useState<string[]>([]);
 
-  const form = useForm({
-    validateInputOnChange: true,
-    initialValues: {
-      plate: {
-        number: {
-          province: '',
-          detail: '',
-        },
-        type: '',
-      },
-      station: {
-        from: {
-          outside: false,
-          id: '',
-          nickname: '',
-          address: {
-            name: '',
-            mapid: '',
-            lon: 116.397428,
-            lat: 39.90923,
-            administrative: '',
-          },
-        },
-        intermediate: [] as IntermediateStationType[],
-        to: {
-          outside: false,
-          id: '',
-          nickname: '',
-          address: {
-            name: '',
-            mapid: '',
-            lon: 116.397428,
-            lat: 39.90923,
-            administrative: '',
-          },
-        },
-      },
-      company: {
-        id: '',
-        desc: '',
-      },
-      schedule: {
-        departTime: '',
-        frequency: '',
-        explain: '',
-      },
-      shuttle: {
-        enabled: false,
-        startTime: '',
-        endTime: '',
-      },
-    },
+  const form = useFormContext<NewRunType>();
 
-    validate: {
-      plate: {
-        type: (value) => {
-          if (!value) {
-            return '请选择车牌类型';
-          }
-          return undefined;
-        },
-        number: {
-          province: (value, values) => {
-            if (values.plate.type === 'other') {
-              return undefined;
-            }
-            if (value.length === 0) {
-              form.setFieldError('plate.number.detail', '请选择车牌省份');
-            }
-            return undefined;
-          },
-          detail: (value, values) => {
-            if (!value) {
-              return '车牌号不能为空';
-            }
-            if (values.plate.type === 'other') {
-              return undefined;
-            }
-            if (!values.plate.number.province) {
-              return '请选择车牌省份';
-            }
-            if (value.length !== 6 && value.length !== 7) {
-              return '车牌号长度必须为 7-8 位';
-            }
-            if (!plateValidate(`${values.plate.number.province}${value.toUpperCase()}`)) {
-              return '车牌号格式不正确';
-            }
-            return undefined;
-          },
-        },
-      },
-      station: {
-        from: {
-          id: (value, values) => {
-            if (!values.station.from.outside && value.length === 0) {
-              return '请选择发站';
-            }
-            return undefined;
-          },
-          address: (value, values) => {
-            if (values.station.from.outside && values.station.from.address.name.length === 0) {
-              return '请填写发站地址';
-            }
-            return undefined;
-          },
-        },
-        to: {
-          id: (value, values) => {
-            if (!values.station.to.outside && value.length === 0) {
-              return '请选择到站';
-            }
-            return undefined;
-          },
-          address: (value, values) => {
-            if (values.station.to.outside && values.station.to.address.name.length === 0) {
-              return '请填写到站地址';
-            }
-            return undefined;
-          },
-        },
-        intermediate: {
-          id: (value, values, path) => {
-            const currentIndex = parseInt(path.split('.')[2], 10);
-            if (
-              values.station.intermediate[currentIndex].type === 'station' &&
-              value.length === 0
-            ) {
-              return '请选择中途车站';
-            }
-            return undefined;
-          },
-          address: (value, values, path) => {
-            const currentIndex = parseInt(path.split('.')[2], 10);
-            if (
-              values.station.intermediate[currentIndex].type !== 'station' &&
-              value.name.length === 0
-            ) {
-              return '请输入车站名称';
-            }
-            return undefined;
-          },
-          time: (value, values, path) => {
-            const currentIndex = parseInt(path.split('.')[2], 10);
-            if (value.subTime.length === 0) {
-              form.setFieldError(`station.intermediate.${currentIndex}.time.subTime`, '请选择时间');
-              return '请选择时间';
-            }
-            if (currentIndex === 0) {
-              if (value.day === 0 && value.subTime <= values.schedule.departTime) {
-                form.setFieldError(
-                  `station.intermediate.${currentIndex}.time.subTime`,
-                  '时间应晚于前一站点'
-                );
-                return '时间应晚于前一站点';
-              }
-            }
-            if (values.station.intermediate[currentIndex - 1]?.time) {
-              const previousTime = values.station.intermediate[currentIndex - 1].time;
-              if (!compareTime(value, previousTime)) {
-                form.setFieldError(
-                  `station.intermediate.${currentIndex}.time.subTime`,
-                  '时间应晚于前一站点'
-                );
-                return '时间应晚于前一站点';
-              }
-            }
-            return undefined;
-          },
-          type: (value) => {
-            if (value.length === 0) {
-              return '请输入类型';
-            }
-            return undefined;
-          },
-        },
-      },
-      company: {
-        id: (value) => {
-          if (value.length === 0) {
-            return '请选择运营公司';
-          }
-          return undefined;
-        },
-      },
-      schedule: {
-        departTime: (value) => {
-          if (value.length === 0) {
-            return '请选择发车时间';
-          }
-          return undefined;
-        },
-        frequency: (value) => {
-          if (value.length === 0) {
-            return '请选择发车频次';
-          }
-          return undefined;
-        },
-      },
-      shuttle: {
-        startTime: (value, values) => {
-          if (values.shuttle.enabled && value.length === 0) {
-            return '请选择开始时间';
-          }
-          return undefined;
-        },
-        endTime: (value, values) => {
-          if (values.shuttle.enabled && value.length === 0) {
-            return '请选择结束时间';
-          }
-          return undefined;
-        },
-      },
-    },
-    onValuesChange: (values, changedValues) => {
-      console.log({ values, changedValues });
+  // validate: {
+  //   plate: {
+  //     type: (value) => {
+  //       if (!value) {
+  //         return '请选择车牌类型';
+  //       }
+  //       return undefined;
+  //     },
+  //     number: {
+  //       province: (value, values) => {
+  //         if (values.plate.type === 'other') {
+  //           return undefined;
+  //         }
+  //         if (value.length === 0) {
+  //           form.setFieldError('plate.number.detail', '请选择车牌省份');
+  //         }
+  //         return undefined;
+  //       },
+  //       detail: (value, values) => {
+  //         if (!value) {
+  //           return '车牌号不能为空';
+  //         }
+  //         if (values.plate.type === 'other') {
+  //           return undefined;
+  //         }
+  //         if (!values.plate.number.province) {
+  //           return '请选择车牌省份';
+  //         }
+  //         if (value.length !== 6 && value.length !== 7) {
+  //           return '车牌号长度必须为 7-8 位';
+  //         }
+  //         if (!plateValidate(`${values.plate.number.province}${value.toUpperCase()}`)) {
+  //           return '车牌号格式不正确';
+  //         }
+  //         return undefined;
+  //       },
+  //     },
+  //   },
+  //   station: {
+  //     from: {
+  //       id: (value, values) => {
+  //         if (!values.station.from.outside && value.length === 0) {
+  //           return '请选择发站';
+  //         }
+  //         return undefined;
+  //       },
+  //       address: (value, values) => {
+  //         if (values.station.from.outside && values.station.from.address.name.length === 0) {
+  //           return '请填写发站地址';
+  //         }
+  //         return undefined;
+  //       },
+  //     },
+  //     to: {
+  //       id: (value, values) => {
+  //         if (!values.station.to.outside && value.length === 0) {
+  //           return '请选择到站';
+  //         }
+  //         return undefined;
+  //       },
+  //       address: (value, values) => {
+  //         if (values.station.to.outside && values.station.to.address.name.length === 0) {
+  //           return '请填写到站地址';
+  //         }
+  //         return undefined;
+  //       },
+  //     },
+  //     intermediate: {
+  //       id: (value, values, path) => {
+  //         const currentIndex = parseInt(path.split('.')[2], 10);
+  //         if (
+  //           values.station.intermediate[currentIndex].type === 'station' &&
+  //           value.length === 0
+  //         ) {
+  //           return '请选择中途车站';
+  //         }
+  //         return undefined;
+  //       },
+  //       address: (value, values, path) => {
+  //         const currentIndex = parseInt(path.split('.')[2], 10);
+  //         if (
+  //           values.station.intermediate[currentIndex].type !== 'station' &&
+  //           value.name.length === 0
+  //         ) {
+  //           return '请输入车站名称';
+  //         }
+  //         return undefined;
+  //       },
+  //       time: (value, values, path) => {
+  //         const currentIndex = parseInt(path.split('.')[2], 10);
+  //         if (value.subTime.length === 0) {
+  //           form.setFieldError(`station.intermediate.${currentIndex}.time.subTime`, '请选择时间');
+  //           return '请选择时间';
+  //         }
+  //         if (currentIndex === 0) {
+  //           if (value.day === 0 && value.subTime <= values.schedule.departTime) {
+  //             form.setFieldError(
+  //               `station.intermediate.${currentIndex}.time.subTime`,
+  //               '时间应晚于前一站点'
+  //             );
+  //             return '时间应晚于前一站点';
+  //           }
+  //         }
+  //         if (values.station.intermediate[currentIndex - 1]?.time) {
+  //           const previousTime = values.station.intermediate[currentIndex - 1].time;
+  //           if (!compareTime(value, previousTime)) {
+  //             form.setFieldError(
+  //               `station.intermediate.${currentIndex}.time.subTime`,
+  //               '时间应晚于前一站点'
+  //             );
+  //             return '时间应晚于前一站点';
+  //           }
+  //         }
+  //         return undefined;
+  //       },
+  //       type: (value) => {
+  //         if (value.length === 0) {
+  //           return '请输入类型';
+  //         }
+  //         return undefined;
+  //       },
+  //     },
+  //   },
+  //   company: {
+  //     id: (value) => {
+  //       if (value.length === 0) {
+  //         return '请选择运营公司';
+  //       }
+  //       return undefined;
+  //     },
+  //   },
+  //   schedule: {
+  //     departTime: (value) => {
+  //       if (value.length === 0) {
+  //         return '请选择发车时间';
+  //       }
+  //       return undefined;
+  //     },
+  //     frequency: (value) => {
+  //       if (value.length === 0) {
+  //         return '请选择发车频次';
+  //       }
+  //       return undefined;
+  //     },
+  //   },
+  //   shuttle: {
+  //     startTime: (value, values) => {
+  //       if (values.shuttle.enabled && value.length === 0) {
+  //         return '请选择开始时间';
+  //       }
+  //       return undefined;
+  //     },
+  //     endTime: (value, values) => {
+  //       if (values.shuttle.enabled && value.length === 0) {
+  //         return '请选择结束时间';
+  //       }
+  //       return undefined;
+  //     },
+  //   },
+  // },
+  // onValuesChange: (values, changedValues) => {
+  //   console.log({ values, changedValues });
+  //
+  //   values.station.intermediate.forEach((item, index) => {
+  //     handleStationChange(
+  //       `intermediate.${index}`,
+  //       changedValues.station.intermediate[index]?.id,
+  //       item.id,
+  //       item.type !== 'station'
+  //     );
+  //   });
+  // },
 
-      values.station.intermediate.forEach((item, index) => {
-        handleStationChange(
-          `intermediate.${index}`,
-          changedValues.station.intermediate[index]?.id,
-          item.id,
-          item.type !== 'station'
-        );
-      });
-    },
+  const data = useWatch({
+    control: form.control,
   });
 
   const addStationListRef = useRef(addStationList);
@@ -279,74 +223,62 @@ export const SubmitRun = forwardRef<
     addStationListRef.current = addStationList;
   }, [addStationList]);
 
-  const handleStationChange = (
-    key: string,
-    previousValue: string,
-    value: string,
-    flag: boolean
-  ) => {
-    if (previousValue === 'ADD' || flag) {
-      const newList = addStationListRef.current.filter((v) => v !== key);
-      newList.sort();
-      setAddStationList(newList);
-      onAddStation(newList);
-    }
+  // const handleStationChange = (
+  //   key: string,
+  //   previousValue: string,
+  //   value: string,
+  //   flag: boolean
+  // ) => {
+  //   if (previousValue === 'ADD' || flag) {
+  //     const newList = addStationListRef.current.filter((v) => v !== key);
+  //     newList.sort();
+  //     setAddStationList(newList);
+  //     onAddStation(newList);
+  //   }
+  //
+  //   if (value === 'ADD' && !flag) {
+  //     const newList = [...addStationListRef.current, key];
+  //     newList.sort();
+  //     setAddStationList(newList);
+  //     onAddStation(newList);
+  //   }
+  // };
 
-    if (value === 'ADD' && !flag) {
-      const newList = [...addStationListRef.current, key];
-      newList.sort();
-      setAddStationList(newList);
-      onAddStation(newList);
-    }
-  };
+  // form.watch('plate.type', () => {
+  //   form.validateField('plate.number.province');
+  //   form.validateField('plate.number.detail');
+  // });
+  //
+  // form.watch('plate.number.province', () => {
+  //   form.validateField('plate.number.province');
+  //   form.validateField('plate.number.detail');
+  // });
+  //
+  // form.watch('plate.number.detail', () => {
+  //   form.validateField('plate.number.detail');
+  // });
+  //
+  // form.watch('station.from.id', ({ previousValue, value, touched, dirty }) => {
+  //   console.log({ previousValue, value, touched, dirty });
+  //   handleStationChange('from', previousValue, value, form.getValues().station.from.outside);
+  // });
+  //
+  // form.watch('station.to.id', ({ previousValue, value, touched, dirty }) => {
+  //   console.log({ previousValue, value, touched, dirty });
+  //   handleStationChange('to', previousValue, value, form.getValues().station.to.outside);
+  // });
 
-  form.watch('plate.type', () => {
-    form.validateField('plate.number.province');
-    form.validateField('plate.number.detail');
-  });
+  const onSub: SubmitHandler<NewRunType> = (_data) => console.log(_data);
 
-  form.watch('plate.number.province', () => {
-    form.validateField('plate.number.province');
-    form.validateField('plate.number.detail');
-  });
-
-  form.watch('plate.number.detail', () => {
-    form.validateField('plate.number.detail');
-  });
-
-  form.watch('station.from.id', ({ previousValue, value, touched, dirty }) => {
-    console.log({ previousValue, value, touched, dirty });
-    handleStationChange('from', previousValue, value, form.getValues().station.from.outside);
-  });
-
-  form.watch('station.to.id', ({ previousValue, value, touched, dirty }) => {
-    console.log({ previousValue, value, touched, dirty });
-    handleStationChange('to', previousValue, value, form.getValues().station.to.outside);
-  });
+  const { control } = form;
 
   return (
     <>
-      <FormProvider form={form}>
+      <FormProvider {...form}>
         <CustomCard title="填写班线信息" collapsible>
-          <form
-            ref={ref}
-            id="submitRun"
-            onSubmit={form.onSubmit(
-              (values) => console.log(values),
-              (errors) => {
-                console.log(errors);
-                const firstErrorPath = Object.keys(errors)[0];
-                form.getInputNode(firstErrorPath)?.focus();
-              }
-            )}
-          >
+          <form ref={ref} id="submitRun" onSubmit={form.handleSubmit(onSub)}>
             <Flex align="stretch" direction="column" justify="center" gap="md">
-              <Radio.Group
-                label="选择车牌类型"
-                withAsterisk
-                key={form.key('plate.type')}
-                {...form.getInputProps('plate.type')}
-              >
+              <Radio.Group label="选择车牌类型" withAsterisk control={control} name="plate.type">
                 <Group
                   mt="xs"
                   styles={{
@@ -355,10 +287,10 @@ export const SubmitRun = forwardRef<
                     },
                   }}
                 >
-                  <Radio value="light" label="小车" description="蓝牌 / 绿牌" />
-                  <Radio value="heavy" label="大车" description="黄牌 / 黄绿牌" />
-                  <Radio value="temp" label="临牌" />
-                  <Radio value="other" label="其他" />
+                  <Radio.Item value="light" label="小车" description="蓝牌 / 绿牌" />
+                  <Radio.Item value="heavy" label="大车" description="黄牌 / 黄绿牌" />
+                  <Radio.Item value="temp" label="临牌" />
+                  <Radio.Item value="other" label="其他" />
                 </Group>
               </Radio.Group>
               <TextInput
@@ -367,14 +299,14 @@ export const SubmitRun = forwardRef<
                 withAsterisk
                 wrapperProps={{
                   onBlur: () => {
-                    form.setFieldValue(
+                    form.setValue(
                       'plate.number.detail',
                       form.getValues().plate.number.detail.toUpperCase()
                     );
                   },
                 }}
-                key={form.key('plate.number.detail')}
-                {...form.getInputProps('plate.number.detail')}
+                control={control}
+                name="plate.number.detail"
                 leftSection={
                   form.getValues().plate.type === 'other' ? undefined : (
                     <Select
@@ -384,8 +316,8 @@ export const SubmitRun = forwardRef<
                       allowDeselect={false}
                       checkIconPosition="right"
                       variant="unstyled"
-                      key={form.key('plate.number.province')}
-                      {...form.getInputProps('plate.number.province')}
+                      control={control}
+                      name="plate.number.province"
                       comboboxProps={{ width: rem(64), position: 'bottom-start' }}
                       styles={{
                         input: {
@@ -409,17 +341,17 @@ export const SubmitRun = forwardRef<
                 verticalSpacing="md"
               >
                 <div>
-                  <Input.Label required>
+                  <InputLabel required>
                     <Group justify="center" align="center" display="inline-flex" gap="md">
                       发站
                       <Checkbox
                         display="inline-block"
                         label="站外发车"
-                        key={form.key('station.from.outside')}
-                        {...form.getInputProps('station.from.outside')}
+                        control={control}
+                        name="station.from.outside"
                       />
                     </Group>
-                  </Input.Label>
+                  </InputLabel>
 
                   {form.getValues().station.from.outside ? (
                     <Stack gap="xs">
@@ -432,13 +364,13 @@ export const SubmitRun = forwardRef<
                           请点击按钮选择位置
                         </Text>
                       )}
-                      <Group preventGrowOverflow={false} wrap="nowrap">
+                      <Group preventGrowOverflow={false} wrap="nowrap" align="start">
                         <TextInput
                           withAsterisk
                           placeholder="站点别名/简称"
                           style={{ flexGrow: 1 }}
-                          key={form.key('station.from.nickname')}
-                          {...form.getInputProps('station.from.nickname')}
+                          control={control}
+                          name="station.from.nickname"
                         />
                         <Modal
                           size="xl"
@@ -448,11 +380,11 @@ export const SubmitRun = forwardRef<
                         >
                           <SearchPOI
                             onClose={(selected) => {
-                              form.setFieldValue('station.from.address.name', selected.name);
-                              form.setFieldValue('station.from.address.mapid', selected.id);
-                              form.setFieldValue('station.from.address.lon', selected.lon);
-                              form.setFieldValue('station.from.address.lat', selected.lat);
-                              form.setFieldValue(
+                              form.setValue('station.from.address.name', selected.name);
+                              form.setValue('station.from.address.mapid', selected.id);
+                              form.setValue('station.from.address.lon', selected.lon);
+                              form.setValue('station.from.address.lat', selected.lat);
+                              form.setValue(
                                 'station.from.address.administrative',
                                 selected.administrative
                               );
@@ -478,24 +410,24 @@ export const SubmitRun = forwardRef<
                       searchable
                       allowDeselect={false}
                       checkIconPosition="right"
-                      key={form.key('station.from.id')}
-                      {...form.getInputProps('station.from.id')}
+                      control={control}
+                      name="station.from.id"
                     />
                   )}
                 </div>
 
                 <div>
-                  <Input.Label required>
+                  <InputLabel required>
                     <Group justify="center" align="center" display="inline-flex" gap="md">
                       到站
                       <Checkbox
                         display="inline-block"
                         label="站外终到"
-                        key={form.key('station.to.outside')}
-                        {...form.getInputProps('station.to.outside')}
+                        control={control}
+                        name="station.to.outside"
                       />
                     </Group>
-                  </Input.Label>
+                  </InputLabel>
 
                   {form.getValues().station.to.outside ? (
                     <Stack gap="xs">
@@ -513,8 +445,8 @@ export const SubmitRun = forwardRef<
                           withAsterisk
                           placeholder="站点别名/简称"
                           style={{ flexGrow: 1 }}
-                          key={form.key('station.to.nickname')}
-                          {...form.getInputProps('station.to.nickname')}
+                          control={control}
+                          name="station.to.nickname"
                         />
                         <Modal
                           size="xl"
@@ -524,11 +456,11 @@ export const SubmitRun = forwardRef<
                         >
                           <SearchPOI
                             onClose={(selected) => {
-                              form.setFieldValue('station.to.address.name', selected.name);
-                              form.setFieldValue('station.to.address.mapid', selected.id);
-                              form.setFieldValue('station.to.address.lon', selected.lon);
-                              form.setFieldValue('station.to.address.lat', selected.lat);
-                              form.setFieldValue(
+                              form.setValue('station.to.address.name', selected.name);
+                              form.setValue('station.to.address.mapid', selected.id);
+                              form.setValue('station.to.address.lon', selected.lon);
+                              form.setValue('station.to.address.lat', selected.lat);
+                              form.setValue(
                                 'station.to.address.administrative',
                                 selected.administrative
                               );
@@ -554,8 +486,8 @@ export const SubmitRun = forwardRef<
                       searchable
                       allowDeselect={false}
                       checkIconPosition="right"
-                      key={form.key('station.to.id')}
-                      {...form.getInputProps('station.to.id')}
+                      control={control}
+                      name="station.to.id"
                     />
                   )}
                 </div>
@@ -568,14 +500,14 @@ export const SubmitRun = forwardRef<
                   searchable
                   allowDeselect={false}
                   checkIconPosition="right"
-                  key={form.key('company.id')}
-                  {...form.getInputProps('company.id')}
+                  control={control}
+                  name="company.id"
                 />
                 <TextInput
                   placeholder="第x分公司 / 第x车队 / 外包 / ……"
                   label="公司补充说明"
-                  key={form.key('company.desc')}
-                  {...form.getInputProps('company.desc')}
+                  control={control}
+                  name="company.desc"
                 />
 
                 <TimeInput
@@ -584,37 +516,33 @@ export const SubmitRun = forwardRef<
                   leftSection={
                     <IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
                   }
-                  key={form.key('schedule.departTime')}
-                  {...form.getInputProps('schedule.departTime')}
+                  control={control}
+                  name="schedule.departTime"
                 />
 
                 <Radio.Group
                   label="发车频次"
                   withAsterisk
-                  key={form.key('schedule.frequency')}
-                  {...form.getInputProps('schedule.frequency')}
+                  control={control}
+                  name="schedule.frequency"
                 >
                   <Group mt="xs">
-                    <Radio value="daily" label="每日发" />
-                    <Radio value="alternate" label="隔日发" />
-                    <Radio value="other" label="其他" />
+                    <Radio.Item value="daily" label="每日发" />
+                    <Radio.Item value="alternate" label="隔日发" />
+                    <Radio.Item value="other" label="其他" />
                   </Group>
                 </Radio.Group>
               </SimpleGrid>
-              {form.getValues().schedule.frequency === 'other' ? (
+              {form.getValues().schedule.frequency === 'other' && (
                 <TextInput
                   withAsterisk
                   label="班次说明"
                   placeholder="如：周末不发车 / 节假日调整 / ……"
-                  key={form.key('schedule.explain')}
-                  {...form.getInputProps('schedule.explain')}
+                  control={control}
+                  name="schedule.explain"
                 />
-              ) : null}
-              <Checkbox
-                label="流水班"
-                key={form.key('shuttle.enabled')}
-                {...form.getInputProps('shuttle.enabled')}
-              />
+              )}
+              <Checkbox label="流水班" control={control} name="shuttle.enabled" />
               {form.getValues().shuttle.enabled ? (
                 <SimpleGrid
                   cols={{ base: 1, sm: 2 }}
@@ -627,8 +555,8 @@ export const SubmitRun = forwardRef<
                     leftSection={
                       <IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
                     }
-                    key={form.key('shuttle.startTime')}
-                    {...form.getInputProps('shuttle.startTime')}
+                    control={control}
+                    name="shuttle.startTime"
                   />
                   <TimeInput
                     label="结束时间"
@@ -636,15 +564,15 @@ export const SubmitRun = forwardRef<
                     leftSection={
                       <IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
                     }
-                    key={form.key('shuttle.endTime')}
-                    {...form.getInputProps('shuttle.endTime')}
+                    control={control}
+                    name="shuttle.endTime"
                   />
                 </SimpleGrid>
               ) : null}
               <Button
                 variant="outline"
                 onClick={() => {
-                  form.setFieldValue('station.intermediate', [
+                  form.setValue('station.intermediate', [
                     ...form.getValues().station.intermediate,
                     {
                       address: {
@@ -670,7 +598,7 @@ export const SubmitRun = forwardRef<
               </Button>
               <DragDropContext
                 onDragEnd={({ destination, source }) => {
-                  form.setFieldValue(
+                  form.setValue(
                     'station.intermediate',
                     (() => {
                       if (!destination) {
@@ -683,12 +611,9 @@ export const SubmitRun = forwardRef<
                       return result;
                     })()
                   );
-                  form.setTouched({ 'station.intermediate': true });
                   // verify all fields
-                  form.getValues().station.intermediate.forEach((_, index) => {
-                    form.validateField(`station.intermediate.${index}.name`);
-                    form.validateField(`station.intermediate.${index}.time`);
-                    form.validateField(`station.intermediate.${index}.type`);
+                  form.getValues().station.intermediate.forEach(() => {
+                    form.trigger('station.intermediate');
                   });
                 }}
               >
@@ -720,7 +645,7 @@ export const SubmitRun = forwardRef<
                                 stationKey={index}
                                 formContext={useFormContext}
                                 onDelete={() => {
-                                  form.setFieldValue(
+                                  form.setValue(
                                     'station.intermediate',
                                     form
                                       .getValues()
@@ -739,6 +664,8 @@ export const SubmitRun = forwardRef<
               </DragDropContext>
             </Flex>
           </form>
+          <Text display="none">{JSON.stringify(data)}</Text>
+          <Text display="none">{JSON.stringify(form.formState.errors)}</Text>
         </CustomCard>
       </FormProvider>
     </>
