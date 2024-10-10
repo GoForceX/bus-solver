@@ -1,23 +1,27 @@
 import { z } from 'zod';
-import { plateValidate } from '@/app/upload/run/plateValidate';
+import { plateValidate } from '@/utils/plateValidate';
 import { IntermediateStationType, NewRunType } from '@/app/upload/run/types';
-import { compareTime } from '@/app/upload/run/compareTime';
+import { compareTime } from '@/utils/compareTime';
 
 const endpointStationSchema = z
   .object({
     outside: z.boolean(),
-    id: z.string(),
+    stationId: z.string(),
     nickname: z.string(),
     address: z.object({
       name: z.string(),
       mapid: z.string(),
       lon: z.number(),
       lat: z.number(),
-      administrative: z.string(),
+      administrative: z.object({
+        province: z.string(),
+        city: z.string(),
+        district: z.string(),
+      }),
     }),
   })
   .superRefine((value, ctx) => {
-    if (!value.outside && value.id === '') {
+    if (!value.outside && value.stationId === '') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['id'],
@@ -81,17 +85,22 @@ export const runFormSchema = z
       intermediate: z.array(
         z
           .object({
+            entryId: z.string().uuid(),
             address: z.object({
               name: z.string(),
               mapid: z.string(),
               lon: z.number(),
               lat: z.number(),
-              administrative: z.string(),
+              administrative: z.object({
+                province: z.string(),
+                city: z.string(),
+                district: z.string(),
+              }),
             }),
             time: z.object({
               day: z.number(),
-              subTime: z.string().time({
-                message: '时间格式不正确',
+              subTime: z.string().min(1, {
+                message: '请填写时间',
               }),
             }),
             type: z
@@ -102,12 +111,12 @@ export const runFormSchema = z
                   message: '站点类型不正确',
                 }
               ),
-            id: z.string(),
+            stationId: z.string(),
             nickname: z.string(),
             remarks: z.string(),
           })
           .superRefine((value, ctx) => {
-            if (value.type !== 'outside' && value.id === '') {
+            if (value.type !== 'outside' && value.stationId === '') {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ['id'],
@@ -187,7 +196,29 @@ export const runFormSchema = z
         }
       }),
   })
-  .required();
+  .required()
+  .superRefine((value, ctx) => {
+    if (value.station.intermediate.length > 0) {
+      const timeList = value.station.intermediate.map((item) => item.time);
+      timeList.forEach((time, index) => {
+        if (index === 0) {
+          if (compareTime(time, { day: 0, subTime: value.schedule.departTime }) === -1) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['station', 'intermediate', index, 'time', 'subTime'],
+              message: '中途站时间不能早于发车时间',
+            });
+          }
+        } else if (compareTime(time, timeList[index - 1]) === -1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['station', 'intermediate', index, 'time', 'subTime'],
+            message: '中途站时间不能早于上一站',
+          });
+        }
+      });
+    }
+  });
 
 export const runFormInitial: NewRunType = {
   plate: {
@@ -200,27 +231,35 @@ export const runFormInitial: NewRunType = {
   station: {
     from: {
       outside: false,
-      id: '',
+      stationId: '',
       nickname: '',
       address: {
         name: '',
         mapid: '',
         lon: 116.397428,
         lat: 39.90923,
-        administrative: '',
+        administrative: {
+          province: '110000',
+          city: '110100',
+          district: '110101',
+        },
       },
     },
     intermediate: [] as IntermediateStationType[],
     to: {
       outside: false,
-      id: '',
+      stationId: '',
       nickname: '',
       address: {
         name: '',
         mapid: '',
         lon: 116.397428,
         lat: 39.90923,
-        administrative: '',
+        administrative: {
+          province: '110000',
+          city: '110100',
+          district: '110101',
+        },
       },
     },
   },

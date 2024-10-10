@@ -1,7 +1,8 @@
 export type IntermediateStationType = {
+  entryId: string;
   type: string;
   time: TimeType;
-  id: string;
+  stationId: string;
   nickname: string;
   address: AddressType;
   remarks: string;
@@ -9,7 +10,7 @@ export type IntermediateStationType = {
 
 export type EndpointStationType = {
   outside: boolean;
-  id: string;
+  stationId: string;
   nickname: string;
   address: AddressType;
 };
@@ -19,7 +20,11 @@ export type AddressType = {
   mapid: string;
   lat: number;
   lon: number;
-  administrative: string;
+  administrative: {
+    province: string;
+    city: string;
+    district: string;
+  };
 };
 
 export type TimeType = {
@@ -53,5 +58,17 @@ export type NewRunType = {
     enabled: false;
     startTime: string;
     endTime: string;
+  };
+};
+
+export type NewStationType = {
+  name: string;
+  address: AddressType;
+  time: {
+    open: string;
+    close: string;
+  };
+  facilities: {
+    toilet: boolean;
   };
 };

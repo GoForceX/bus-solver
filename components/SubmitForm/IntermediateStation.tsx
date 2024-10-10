@@ -1,5 +1,22 @@
-import { Group, Text, rem, Button, Modal, Stack, InputLabel } from '@mantine/core';
-import { Radio, TextInput, Select, TimeInput, Textarea } from 'react-hook-form-mantine';
+import {
+  Group,
+  Text,
+  rem,
+  Button,
+  Modal,
+  Stack,
+  InputLabel,
+  InputWrapper,
+  Space,
+} from '@mantine/core';
+import {
+  Radio,
+  TextInput,
+  Select,
+  TimeInput,
+  Textarea,
+  NumberInput,
+} from 'react-hook-form-mantine';
 import { useDisclosure } from '@mantine/hooks';
 import { IconClock, IconX } from '@tabler/icons-react';
 import { UseFormReturn } from 'react-hook-form';
@@ -80,7 +97,7 @@ export const IntermediateStation = forwardRef<
                     allowDeselect={false}
                     checkIconPosition="right"
                     control={control}
-                    name={`station.intermediate.${stationKey}.id`}
+                    name={`station.intermediate.${stationKey}.stationId`}
                   />
                 ) : (
                   <Stack gap="xs">
@@ -152,13 +169,26 @@ export const IntermediateStation = forwardRef<
             </div>
           )}
 
-          <TimeInput
-            label="时间"
-            withAsterisk
-            leftSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />}
-            control={control}
-            name={`station.intermediate.${stationKey}.time.subTime`}
-          />
+          <InputWrapper label="时间" withAsterisk>
+            <Group gap={0} preventGrowOverflow={false}>
+              +
+              <NumberInput
+                name={`station.intermediate.${stationKey}.time.day`}
+                control={control}
+                style={{ width: rem(64) }}
+                min={0}
+                max={9}
+              />
+              天
+              <Space w={rem(16)} />
+              <TimeInput
+                style={{ flexGrow: 1 }}
+                leftSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />}
+                control={control}
+                name={`station.intermediate.${stationKey}.time.subTime`}
+              />
+            </Group>
+          </InputWrapper>
 
           <Textarea
             label="备注"

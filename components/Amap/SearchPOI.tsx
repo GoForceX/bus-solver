@@ -9,7 +9,9 @@ import {
   rem,
   Space,
   Box,
+  Select,
   LoadingOverlay,
+  Grid,
 } from '@mantine/core';
 import { useState } from 'react';
 import { IconSearch, IconAdjustmentsPin } from '@tabler/icons-react';
@@ -17,6 +19,7 @@ import { notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 
 import MapContainer from './MapComponent';
+import regions from '@/utils/chinaRegions.json';
 
 export function SearchPOI({
   onClose,
@@ -26,12 +29,20 @@ export function SearchPOI({
     name: string;
     lon: number;
     lat: number;
-    administrative: string;
+    administrative: {
+      province: string;
+      city: string;
+      district: string;
+    };
   }) => void;
 }) {
   const [map, setMap] = useState(null as any);
   const [markers, setMarkers] = useState([] as any[]);
   const [activeTab, setActiveTab] = useState<string | null>('search');
+
+  const [province, setProvince] = useState('');
+  const [city, setCity] = useState('');
+  const [district, setDistrict] = useState('');
 
   const [overlayVisible, { open: openOverlay, close: closeOverlay }] = useDisclosure(false);
 
@@ -48,7 +59,11 @@ export function SearchPOI({
       name: string;
       lon: number;
       lat: number;
-      administrative: string;
+      administrative: {
+        province: string;
+        city: string;
+        district: string;
+      };
     }
   );
 
@@ -66,7 +81,7 @@ export function SearchPOI({
   //       setSearchData([]);
   //     } else {
   //       setSearchData(
-  //         result.poiList.pois.map((item: any) => ({ value: item.id, label: item.name }))
+  //         result.poiList.pois.map((item: any) => ({ value: item.stationId, label: item.name }))
   //       );
   //     }
   //   });
@@ -208,7 +223,11 @@ export function SearchPOI({
                     name: '',
                     lon: 116.397428,
                     lat: 39.90923,
-                    administrative: '110101',
+                    administrative: {
+                      province: '110000',
+                      city: '110100',
+                      district: '110101',
+                    },
                   });
                   const placeSearch = new window.AMap.PlaceSearch({
                     pageSize: 5,
@@ -231,7 +250,11 @@ export function SearchPOI({
                       name: event.selected.data.name,
                       lon: event.selected.data.location.lng,
                       lat: event.selected.data.location.lat,
-                      administrative: event.selected.data.adcode,
+                      administrative: {
+                        province: `${event.selected.data.adcode.slice(0, 2)}0000`,
+                        city: `${event.selected.data.adcode.slice(0, 4)}00`,
+                        district: event.selected.data.adcode,
+                      },
                     });
                   });
                 }}
@@ -241,6 +264,55 @@ export function SearchPOI({
             </Group>
           </Tabs.Panel>
         </Tabs>
+
+        <Grid>
+          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+            <Select
+              name="province"
+              label="省级"
+              value={province}
+              onChange={(_value, option) => setProvince(option.value)}
+              data={regions.map((provinceList) => ({
+                value: provinceList.code,
+                label: provinceList.name,
+              }))}
+            />
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+            <Select
+              name="city"
+              label="市级"
+              value={city}
+              display={province !== '' ? 'block' : 'none'}
+              onChange={(_value, option) => setCity(option.value)}
+              data={(
+                regions.find((value) => value.code === province) || { children: [] }
+              ).children.map((cityList) => ({
+                value: cityList.code,
+                label: cityList.name,
+              }))}
+            />
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+            <Select
+              name="district"
+              label="区级"
+              value={district}
+              display={city !== '' ? 'block' : 'none'}
+              onChange={(_value, option) => setDistrict(option.value)}
+              data={(
+                (regions.find((value) => value.code === province)?.children || []).find(
+                  (value) => value.code === city
+                )?.children || []
+              ).map((cityList) => ({
+                value: cityList.code,
+                label: cityList.name,
+              }))}
+            />
+          </Grid.Col>
+        </Grid>
 
         <Divider />
 
