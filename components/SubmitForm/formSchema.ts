@@ -3,23 +3,25 @@ import { plateValidate } from '@/utils/plateValidate';
 import { IntermediateStationType, NewRunType } from '@/app/upload/run/types';
 import { compareTime } from '@/utils/compareTime';
 
+const addressSchema = z.object({
+  name: z.string(),
+  mapid: z.string(),
+  lon: z.number(),
+  lat: z.number(),
+  administrative: z.object({
+    province: z.string().nullable(),
+    city: z.string().nullable(),
+    district: z.string().nullable(),
+    town: z.string().nullable(),
+  }),
+});
+
 const endpointStationSchema = z
   .object({
     outside: z.boolean(),
     stationId: z.string(),
     nickname: z.string(),
-    address: z.object({
-      name: z.string(),
-      mapid: z.string(),
-      lon: z.number(),
-      lat: z.number(),
-      administrative: z.object({
-        province: z.string(),
-        city: z.string(),
-        district: z.string(),
-        town: z.string(),
-      }),
-    }),
+    address: addressSchema,
   })
   .superRefine((value, ctx) => {
     if (!value.outside && value.stationId === '') {
@@ -87,18 +89,7 @@ export const runFormSchema = z
         z
           .object({
             entryId: z.string().uuid(),
-            address: z.object({
-              name: z.string(),
-              mapid: z.string(),
-              lon: z.number(),
-              lat: z.number(),
-              administrative: z.object({
-                province: z.string(),
-                city: z.string(),
-                district: z.string(),
-                town: z.string(),
-              }),
-            }),
+            address: addressSchema,
             time: z.object({
               day: z.number(),
               subTime: z.string().min(1, {
