@@ -365,9 +365,10 @@ export const SubmitRun = forwardRef<
                         lon: 116.397428,
                         lat: 39.90923,
                         administrative: {
-                          province: '110000',
-                          city: '110100',
-                          district: '110101',
+                          province: null,
+                          city: null,
+                          district: null,
+                          town: null,
                         },
                       },
                       time: {

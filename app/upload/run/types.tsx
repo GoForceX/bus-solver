@@ -21,9 +21,10 @@ export type AddressType = {
   lat: number;
   lon: number;
   administrative: {
-    province: string;
-    city: string;
-    district: string;
+    province: string | null;
+    city: string | null;
+    district: string | null;
+    town: string | null;
   };
 };
 

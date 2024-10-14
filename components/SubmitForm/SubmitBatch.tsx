@@ -17,6 +17,7 @@ import { modals } from '@mantine/modals';
 import React, { useState } from 'react';
 import { IconArrowLeft, IconArrowRight, IconEyeCheck } from '@tabler/icons-react';
 import { FormProvider, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { NewRunType } from '@/app/upload/run/types';
 
 import { handleSubmit } from '@/app/upload/run/handleSubmit';
@@ -26,7 +27,6 @@ import { CustomCard } from '../CustomCard/CustomCard';
 
 import './stepper.css';
 import { runFormInitial, runFormSchema } from '@/components/SubmitForm/formSchema';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 export function SubmitBatch({
   stationList,

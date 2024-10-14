@@ -17,6 +17,7 @@ const endpointStationSchema = z
         province: z.string(),
         city: z.string(),
         district: z.string(),
+        town: z.string(),
       }),
     }),
   })
@@ -95,6 +96,7 @@ export const runFormSchema = z
                 province: z.string(),
                 city: z.string(),
                 district: z.string(),
+                town: z.string(),
               }),
             }),
             time: z.object({
@@ -239,9 +241,10 @@ export const runFormInitial: NewRunType = {
         lon: 116.397428,
         lat: 39.90923,
         administrative: {
-          province: '110000',
-          city: '110100',
-          district: '110101',
+          province: null,
+          city: null,
+          district: null,
+          town: null,
         },
       },
     },
@@ -256,9 +259,10 @@ export const runFormInitial: NewRunType = {
         lon: 116.397428,
         lat: 39.90923,
         administrative: {
-          province: '110000',
-          city: '110100',
-          district: '110101',
+          province: null,
+          city: null,
+          district: null,
+          town: null,
         },
       },
     },

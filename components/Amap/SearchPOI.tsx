@@ -13,13 +13,14 @@ import {
   LoadingOverlay,
   Grid,
 } from '@mantine/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useImmer } from 'use-immer';
 import { IconSearch, IconAdjustmentsPin } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 
 import MapContainer from './MapComponent';
-import regions from '@/utils/chinaRegions.json';
+import { getProvince, getCity, getTown, getCounty } from '@/components/Amap/regionSolver';
 
 export function SearchPOI({
   onClose,
@@ -30,9 +31,10 @@ export function SearchPOI({
     lon: number;
     lat: number;
     administrative: {
-      province: string;
-      city: string;
-      district: string;
+      province: string | null;
+      city: string | null;
+      district: string | null;
+      town: string | null;
     };
   }) => void;
 }) {
@@ -40,9 +42,10 @@ export function SearchPOI({
   const [markers, setMarkers] = useState([] as any[]);
   const [activeTab, setActiveTab] = useState<string | null>('search');
 
-  const [province, setProvince] = useState('');
-  const [city, setCity] = useState('');
-  const [district, setDistrict] = useState('');
+  const [province, setProvince] = useState<string | null>(null);
+  const [city, setCity] = useState<string | null>(null);
+  const [district, setDistrict] = useState<string | null>(null);
+  const [town, setTown] = useState<string | null>(null);
 
   const [overlayVisible, { open: openOverlay, close: closeOverlay }] = useDisclosure(false);
 
@@ -53,41 +56,90 @@ export function SearchPOI({
   //     label: string;
   //   }[]
   // );
-  const [searchResult, setSearchResult] = useState(
-    {} as {
-      id: string;
-      name: string;
-      lon: number;
-      lat: number;
-      administrative: {
-        province: string;
-        city: string;
-        district: string;
-      };
-    }
-  );
+  const [searchResult, setSearchResult] = useImmer({
+    id: '',
+    name: '',
+    lon: 116.397428,
+    lat: 39.90923,
+    administrative: {
+      province: null,
+      city: null,
+      district: null,
+      town: null,
+    },
+  } as {
+    id: string;
+    name: string;
+    lon: number;
+    lat: number;
+    administrative: {
+      province: string | null;
+      city: string | null;
+      district: string | null;
+      town: string | null;
+    };
+  });
 
   const iconStyle = { width: rem(12), height: rem(12) };
 
-  // function onSearchLocationChange(value: string) {
-  //   console.log(window.AMap);
-  // window.AMap.plugin('AMap.PlaceSearch', () => {
-  //   console.log(map);
-  //   const placeSearch = new window.AMap.PlaceSearch({});
-  //   placeSearch.search(value, (status: string, result: any) => {
-  //     //查询成功时，result 即对应匹配的 POI 信息
-  //     console.log(result, typeof result);
-  //     if (typeof result === 'string' || status !== 'complete') {
-  //       setSearchData([]);
-  //     } else {
-  //       setSearchData(
-  //         result.poiList.pois.map((item: any) => ({ value: item.stationId, label: item.name }))
-  //       );
-  //     }
-  //   });
-  // });
-  // setTestValue(value);
-  // }
+  const [provinceData, setProvinceData] = useState<{ value: string; label: string }[]>([]);
+  const [cityData, setCityData] = useState<{ value: string; label: string }[]>([]);
+  const [districtData, setDistrictData] = useState<{ value: string; label: string }[]>([]);
+  const [townData, setTownData] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    fetchProvinceData();
+  }, []);
+
+  useEffect(() => {
+    if (province) {
+      fetchCityData(province);
+    }
+  }, [province]);
+
+  useEffect(() => {
+    if (city) {
+      fetchDistrictData(city);
+    }
+  }, [city]);
+
+  useEffect(() => {
+    if (district) {
+      fetchTownData(district);
+    }
+  }, [district]);
+
+  async function fetchProvinceData() {
+    const data = (await getProvince()).map((provinceList) => ({
+      value: provinceList.id,
+      label: provinceList.name,
+    }));
+    setProvinceData(data);
+  }
+
+  async function fetchCityData(_province: string) {
+    const data = (await getCity(_province)).map((cityList) => ({
+      value: cityList.id,
+      label: cityList.name,
+    }));
+    setCityData(data);
+  }
+
+  async function fetchDistrictData(_city: string) {
+    const data = (await getCounty(_city)).map((districtList) => ({
+      value: districtList.id,
+      label: districtList.name,
+    }));
+    setDistrictData(data);
+  }
+
+  async function fetchTownData(_district: string) {
+    const data = (await getTown(_district)).map((townList) => ({
+      value: townList.id,
+      label: townList.name,
+    }));
+    setTownData(data);
+  }
 
   function onMarkerDragStart(event: any) {
     setSearchResult({
@@ -142,6 +194,8 @@ export function SearchPOI({
     });
   }
 
+  // @ts-ignore
+  // @ts-ignore
   return (
     <>
       <Stack>
@@ -224,9 +278,10 @@ export function SearchPOI({
                     lon: 116.397428,
                     lat: 39.90923,
                     administrative: {
-                      province: '110000',
-                      city: '110100',
-                      district: '110101',
+                      province: null,
+                      city: null,
+                      district: null,
+                      town: null,
                     },
                   });
                   const placeSearch = new window.AMap.PlaceSearch({
@@ -251,11 +306,23 @@ export function SearchPOI({
                       lon: event.selected.data.location.lng,
                       lat: event.selected.data.location.lat,
                       administrative: {
-                        province: `${event.selected.data.adcode.slice(0, 2)}0000`,
-                        city: `${event.selected.data.adcode.slice(0, 4)}00`,
-                        district: event.selected.data.adcode,
+                        province:
+                          province !== null
+                            ? province
+                            : `${event.selected.data.adcode.slice(0, 2)}0000000000`,
+                        city:
+                          city !== null
+                            ? city
+                            : `${event.selected.data.adcode.slice(0, 4)}00000000`,
+                        district:
+                          district !== null ? district : `${event.selected.data.adcode}000000`,
+                        town: town !== null ? town : null,
                       },
                     });
+
+                    setProvince(`${event.selected.data.adcode.slice(0, 2)}0000000000`);
+                    setCity(`${event.selected.data.adcode.slice(0, 4)}00000000`);
+                    setDistrict(`${event.selected.data.adcode}000000`);
                   });
                 }}
               >
@@ -271,11 +338,16 @@ export function SearchPOI({
               name="province"
               label="省级"
               value={province}
-              onChange={(_value, option) => setProvince(option.value)}
-              data={regions.map((provinceList) => ({
-                value: provinceList.code,
-                label: provinceList.name,
-              }))}
+              onChange={(_value, option) => {
+                setProvince(option.value);
+                setSearchResult((draft) => {
+                  draft.administrative.province = option.value;
+                });
+                setCity(null);
+                setDistrict(null);
+                setTown(null);
+              }}
+              data={provinceData}
             />
           </Grid.Col>
 
@@ -285,13 +357,15 @@ export function SearchPOI({
               label="市级"
               value={city}
               display={province !== '' ? 'block' : 'none'}
-              onChange={(_value, option) => setCity(option.value)}
-              data={(
-                regions.find((value) => value.code === province) || { children: [] }
-              ).children.map((cityList) => ({
-                value: cityList.code,
-                label: cityList.name,
-              }))}
+              onChange={(_value, option) => {
+                setCity(option.value);
+                setSearchResult((draft) => {
+                  draft.administrative.city = option.value;
+                });
+                setDistrict(null);
+                setTown(null);
+              }}
+              data={cityData}
             />
           </Grid.Col>
 
@@ -301,15 +375,30 @@ export function SearchPOI({
               label="区级"
               value={district}
               display={city !== '' ? 'block' : 'none'}
-              onChange={(_value, option) => setDistrict(option.value)}
-              data={(
-                (regions.find((value) => value.code === province)?.children || []).find(
-                  (value) => value.code === city
-                )?.children || []
-              ).map((cityList) => ({
-                value: cityList.code,
-                label: cityList.name,
-              }))}
+              onChange={(_value, option) => {
+                setDistrict(option.value);
+                setSearchResult((draft) => {
+                  draft.administrative.district = option.value;
+                });
+                setTown(null);
+              }}
+              data={districtData}
+            />
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+            <Select
+              name="town"
+              label="镇级"
+              value={town}
+              display={district !== '' ? 'block' : 'none'}
+              onChange={(_value, option) => {
+                setTown(option.value);
+                setSearchResult((draft) => {
+                  draft.administrative.town = option.value;
+                });
+              }}
+              data={townData}
             />
           </Grid.Col>
         </Grid>
